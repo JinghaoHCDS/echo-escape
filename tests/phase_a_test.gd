@@ -34,7 +34,6 @@ func run() -> void:
 		valid = valid and data.is_open(data.world_to_cell(point))
 	check(valid, "A: every navigation waypoint is in physical open grid")
 	# Real input at a wall must produce zero steps after initial movement settles.
-	var action := InputEventKey.new()
 	InputMap.add_action("move_left")
 	InputMap.add_action("move_right")
 	InputMap.add_action("move_forward")

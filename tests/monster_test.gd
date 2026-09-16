@@ -148,11 +148,28 @@ func _run() -> void:
 	_check(not crossed_solid and went_around, "实际3D移动沿四邻接路径绕过实体障碍，未穿墙")
 	_check(_monster.global_position.distance_to(_player.global_position) < 2.0, "绕行后能到达玩家附近，未卡在墙角")
 	_check(_monster.last_known_position == _player.global_position, "信标阶段允许持续更新位置证据")
+	# A real game's hit receiver disables Session immediately. Collision bodies
+	# leave their physics space synchronously while this attack callback runs.
+	_place(Vector3(17.5, 0.0, 14.6), Vector3(17.5, 0.0, 13.4), 0.0)
+	await _settle()
+	_monster.player_hit.connect(func(_reason: String) -> void: _stage.process_mode = Node.PROCESS_MODE_DISABLED)
+	_monster._begin_attack()
+	_monster._state_time = 0.66
+	var before_final_hit: int = _hits
+	_monster._physics_process(1.0 / 60.0)
+	_check(_hits == before_final_hit + 1 and not PhysicsServer3D.body_get_space(_monster.get_rid()).is_valid(), "命中同步冻结场景后安全停止物理回调，无移除body继续移动错误")
 	print("MONSTER_TEST: %d checks, %d failures" % [_checks, _failures])
+	# Re-enable the audio subtree before stopping a cue paused by the final
+	# fixture. Let the audio mixing thread release its WAV playback references.
+	_sound.process_mode = Node.PROCESS_MODE_ALWAYS
 	_sound.clear()
-	await _settle()
+	for voice: AudioStreamPlayer3D in _sound._voices:
+		voice.stream_paused = false
+		voice.stop()
+		voice.stream = null
+	await create_timer(0.15, true).timeout
 	_stage.queue_free()
-	await _settle()
+	await create_timer(0.05, true).timeout
 	quit(0 if _failures == 0 else 1)
 
 

@@ -1,0 +1,13 @@
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+Metal 4.0 - Forward+ - Using Device #0: Apple - Apple M4 (Apple9)
+
+PASS E: real movement reaches deep machine room with active AI
+PASS E: reachable clap then real pickup
+PASS E: active pursuer switched to beacon tracking
+PASS E: full expedition + pickup + alternate return route wins
+METRICS viewport=(1920, 1080) physics_samples=1149 elapsed_seconds=19.179805 rendered_frames=2283 capture=true last_fps=120.0 renderer=forward_plus
+PASS E: victory restart produces fresh scene
+PASS E: visible attack windup precedes failure
+PASS E: actual attack hit produces failure
+PASS E: actual defeat restart resets scene
+PLAYTHROUGH failures=0

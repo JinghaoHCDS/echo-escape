@@ -8,7 +8,8 @@ var frames: int = 0
 var worst_frame_ms: float = 0.0
 var elapsed_ms: float = 0.0
 var capture: bool = false
-var captured_mid: bool = false
+var start_usec: int = 0
+var start_drawn: int = 0
 
 func _initialize() -> void:
 	call_deferred("run")
@@ -51,7 +52,9 @@ func walk_to(target: Vector3) -> void:
 	Input.action_release("run")
 
 func run() -> void:
-	capture = DisplayServer.get_name() != "headless"
+	capture = DisplayServer.get_name() != "headless" and not "--no-capture" in OS.get_cmdline_user_args()
+	if DisplayServer.get_name() != "headless":
+		root.size = Vector2i(1920, 1080)
 	if capture:
 		DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://docs/screenshots"))
 		root.size = Vector2i(1920, 1080)
@@ -63,6 +66,8 @@ func run() -> void:
 	game.player.camera.rotation.x = -0.13
 	await tick()
 	await snapshot("02-entry-echo")
+	start_usec = Time.get_ticks_usec()
+	start_drawn = Engine.get_frames_drawn()
 	await walk_to(Vector3(8.5, 0.0, 12.5))
 	await walk_to(Vector3(10.5, 0.0, 7.5))
 	await walk_to(Vector3(18.5, 0.0, 6.5))
@@ -88,7 +93,7 @@ func run() -> void:
 		await physics_frame
 	check(game.status == "won", "E: full expedition + pickup + alternate return route wins")
 	await snapshot("06-victory")
-	print("METRICS viewport=", root.size, " physics_samples=", frames, " mean_process_ms=", elapsed_ms / maxf(1.0, frames), " worst_process_ms=", worst_frame_ms, " last_fps=", Engine.get_frames_per_second(), " renderer=", RenderingServer.get_current_rendering_method())
+	print("METRICS viewport=", root.size, " physics_samples=", frames, " elapsed_seconds=", float(Time.get_ticks_usec() - start_usec) / 1000000.0, " rendered_frames=", Engine.get_frames_drawn() - start_drawn, " capture=", capture, " last_fps=", Engine.get_frames_per_second(), " renderer=", RenderingServer.get_current_rendering_method())
 	game.restart()
 	await process_frame
 	await process_frame
@@ -103,7 +108,7 @@ func run() -> void:
 	var windup_seen: bool = false
 	for index in range(180):
 		await physics_frame
-		if game.monster.state == "ATTACK_WINDUP" and not windup_seen:
+		if game.monster.state == "ATTACK_WINDUP" and game.monster._state_time > 0.35 and not windup_seen:
 			windup_seen = true
 			await snapshot("07-windup")
 		if game.status == "lost":

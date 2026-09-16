@@ -14,7 +14,7 @@ macOS / Linux 终端也可运行：
 bash tools/run.sh
 ```
 
-脚本优先使用本机发现的 Godot 4.6.1 路径，其次查找 `godot` / `godot4`。其他安装位置可显式指定：
+脚本依次使用 `GODOT_BIN`、PATH 中的 `godot` / `godot4`、常见 macOS 安装路径。其他安装位置可显式指定：
 
 ```bash
 GODOT_BIN="/absolute/path/to/Godot" bash tools/run.sh
@@ -107,8 +107,9 @@ F1 是开发视图，会打开正常照明并显示怪物状态、最后已知�
 ## 检查与已知限制
 
 ```bash
-# 导入工程，然后顺序运行 tests/*_test.gd。
+# 导入工程，然后按阶段运行逻辑/物理回归。
 bash tools/check.sh
+bash tools/check.sh --graphics  # 加跑真实图形、混音、输入与完整流程
 
 # 仅作无窗口启动冒烟检查。
 bash tools/run.sh --headless --quit-after 120
@@ -119,3 +120,7 @@ bash tools/run.sh --headless --quit-after 120
 原型只有一张地图、一个怪物和一个核心，无存档、程序化生成、真实麦克风输入、复杂声学或完整音频遮挡；没有复杂导航避让。Windows 与 macOS 是目标平台，未在某个平台运行的项目不会标作已验证。导出模板与安装包状态同样以验证记录为准，源码工程可直接交付运行。
 
 机制受声音探索玩法启发；本工程布局、几何、Shader、脚本与合成音均为本项目制作，不包含《回声探路》的素材、地图、标识或代码。
+
+## 本机构建
+
+已提供 `builds/EchoEscape-macOS.zip`，解压后打开应用；本机已实际启动验证。重新导出运行 `bash tools/export.sh`。Windows 预设已准备，可用 `bash tools/export.sh "Windows Desktop"`，但本轮未构建或运行 Windows 版本。构建输出不进入 Git；本版标签为 `v0.1.0`，历史见 `CHANGELOG.md`。

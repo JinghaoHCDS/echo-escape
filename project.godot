@@ -18,6 +18,7 @@ window/stretch/mode="canvas_items"
 renderer/rendering_method="forward_plus"
 renderer/rendering_method.mobile="forward_plus"
 textures/default_filters/use_nearest_mipmap_filter=false
+textures/vram_compression/import_etc2_astc=true
 anti_aliasing/quality/msaa_3d=1
 environment/defaults/default_clear_color=Color(0.002, 0.004, 0.008, 1)
 

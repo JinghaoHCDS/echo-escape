@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")/.."
-GODOT_BIN="${GODOT_BIN:-/Users/jinghao/Applications/Godot-4.6.1-stable/Godot.app/Contents/MacOS/Godot}"
-if [[ ! -x "$GODOT_BIN" ]]; then GODOT_BIN="$(command -v godot || command -v godot4)"; fi
+GODOT_BIN="$(bash tools/find_godot.sh)"
 check_log="$(mktemp -t echo-escape-check.XXXXXX)"
 trap 'rm -f "$check_log"' EXIT
 run_checked() {
@@ -11,13 +10,13 @@ run_checked() {
   if grep -Eq 'SCRIPT ERROR:|^ERROR:|^FAIL ' "$check_log"; then return 1; fi
 }
 run_checked --headless --path . --editor --import --quit
-for test in phase_a sound monster gameplay playthrough audio occlusion; do
+for test in phase_a sound monster gameplay playthrough audio occlusion input; do
   if [[ -f "tests/${test}_test.gd" ]]; then
     run_checked --headless --path . --script "tests/${test}_test.gd"
   fi
 done
 if [[ "${1:-}" == "--graphics" ]]; then
-  for test in sound audio occlusion playthrough; do
+  for test in sound audio occlusion input playthrough; do
     run_checked --path . --script "tests/${test}_test.gd"
   done
 fi

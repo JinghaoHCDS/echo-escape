@@ -444,25 +444,27 @@ func _update_visuals(_delta: float) -> void:
 	var illumination: float = 1.0 if _debug else clampf(_reveal_remaining / 0.22, 0.0, 1.0)
 	var danger: bool = state == CHASE or _is_attacking() or alarm_active
 	var edge_color: Color = Color(1.0, 0.18, 0.065) if danger else Color(0.45, 0.74, 0.81)
-	_body_material.albedo_color = Color(0.002, 0.003, 0.005).lerp(Color(0.10, 0.14, 0.17), illumination)
+	_body_material.albedo_color = Color(0.002, 0.003, 0.005).lerp(Color(0.13, 0.19, 0.22), illumination)
 	_body_material.emission = Color(0.04, 0.085, 0.105) * illumination
-	_edge_material.albedo_color = Color(0.002, 0.003, 0.005)
+	# Unshaded materials must carry readable color in albedo too; depending on
+	# the rendering path, emission alone does not brighten their silhouette.
+	_edge_material.albedo_color = Color(0.002, 0.003, 0.005).lerp(edge_color * 0.7, illumination)
 	_edge_material.emission = edge_color * illumination * 0.9
-	_face_material.albedo_color = Color(0.002, 0.003, 0.005)
+	_face_material.albedo_color = Color(0.002, 0.003, 0.005).lerp(edge_color * 0.9, illumination)
 	_face_material.emission = edge_color * illumination * 1.5
 	var arm_angle: float = 0.0
 	var body_tilt: float = 0.0
 	if state == ATTACK_WINDUP:
 		var progress: float = clampf(_state_time / _number("attack_windup", 0.65), 0.0, 1.0)
-		arm_angle = -2.15 * progress
-		body_tilt = -0.16 * progress
+		arm_angle = 2.15 * progress
+		body_tilt = 0.10 * progress
 	elif state == ATTACK_STRIKE:
 		arm_angle = 1.25
-		body_tilt = 0.28
+		body_tilt = -0.22
 	elif state == ATTACK_RECOVERY:
 		var remaining: float = 1.0 - clampf(_state_time / _number("attack_recovery", 1.0), 0.0, 1.0)
 		arm_angle = 1.25 * remaining
-		body_tilt = 0.28 * remaining
+		body_tilt = -0.22 * remaining
 	else:
 		# A small arm gait affects the monster only; the player's camera stays still.
 		var moving: bool = Vector2(velocity.x, velocity.z).length() > 0.1
