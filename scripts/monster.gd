@@ -103,6 +103,8 @@ func reveal(duration: float = 0.7) -> void:
 func _physics_process(delta: float) -> void:
 	if not _ready_to_run or not is_instance_valid(_player):
 		return
+	if not is_inside_tree() or not PhysicsServer3D.body_get_space(get_rid()).is_valid():
+		return
 	_state_time += delta
 	_repath_timer -= delta
 	_reveal_remaining = maxf(0.0, _reveal_remaining - delta)
@@ -152,6 +154,11 @@ func _physics_process(delta: float) -> void:
 				else:
 					_enter_state(SEARCH)
 
+	# player_hit is synchronous. Its receiver can finish the game and disable
+	# Session during the attack above, immediately removing this collision body
+	# from its physics space. Do not continue this already-running callback.
+	if not is_inside_tree() or not PhysicsServer3D.body_get_space(get_rid()).is_valid():
+		return
 	if not is_on_floor():
 		velocity.y -= _number("gravity", 20.0) * delta
 	else:

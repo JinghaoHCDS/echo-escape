@@ -54,7 +54,7 @@ void fragment() {
 		* (1.0 - smoothstep(0.10, 0.60, world_position.y));
 	vec3 base = vec3(0.0010, 0.0020, 0.0040);
 	vec3 color = base + vec3(0.008, 0.018, 0.025) * near_floor;
-	color += echo_color * COLOR.rgb * (face_light + details + front * 0.14) * echo;
+	color += echo_color * COLOR.rgb * (face_light * 0.35 + details * 0.7 + front * 0.12) * echo;
 	if (debug_lit) {
 		color = vec3(0.21, 0.29, 0.34) * COLOR.rgb * (0.65 + face_light + details);
 		color += echo_color * echo * 0.17;
