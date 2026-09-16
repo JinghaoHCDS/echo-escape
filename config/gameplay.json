@@ -31,5 +31,9 @@
   "exit_radius": 1.45,
   "max_waves": 24,
   "max_audio_voices": 16,
-  "audio_volume": 0.8
+  "audio_volume": 0.8,
+  "attack_start_range": 1.77,
+  "attack_strike_duration": 0.12,
+  "monster_repath_interval": 0.45,
+  "sound_listener_radius": 0.3
 }
