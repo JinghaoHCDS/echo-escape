@@ -1,0 +1,297 @@
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+[   0% ] first_scan_filesystem | Started 项目初始化 (5 steps)
+[   0% ] first_scan_filesystem | 正在扫描文件结构……
+[  16% ] first_scan_filesystem | 正在加载全局类名……
+[  33% ] first_scan_filesystem | 正在校验 GDExtension……
+[  50% ] first_scan_filesystem | 正在创建自动加载脚本……
+[  66% ] first_scan_filesystem | 正在初始化插件……
+[  83% ] first_scan_filesystem | 正在启动文件扫描……
+[ DONE ] first_scan_filesystem
+
+[   0% ] update_scripts_classes | Started 正在注册全局类…… (6 steps)
+[   0% ] update_scripts_classes | EchoDebugGrid
+[  14% ] update_scripts_classes | LevelBuilder
+[  28% ] update_scripts_classes | EchoGame
+[  42% ] update_scripts_classes | SoundSystem
+[  57% ] update_scripts_classes |
+[  71% ] update_scripts_classes |
+[ DONE ] update_scripts_classes
+
+[   0% ] loading_editor_layout | Started 正在加载编辑器 (5 steps)
+[   0% ] loading_editor_layout | 正在加载编辑器布局……
+[  16% ] loading_editor_layout | 正在加载停靠面板……
+[ DONE ] loading_editor_layout
+
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+PASS A: capsule blocked by west wall
+PASS A: floor blocks gravity
+PASS A: entry and deep item connected
+PASS A: every navigation waypoint is in physical open grid
+PASS A: pushing into wall does not emit footsteps
+PHASE A failures=0
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+FIELD_SETUP_MS: 3.444 corners=40
+PASS: 隔墙直线确实被墙体阻挡
+PASS: 声音绕门洞路径长于直线，短于旧曼哈顿路径
+PASS: 绕角距离接近连续最短路（厘米级保守余量）
+PASS: 半径不足时隔墙接收点不可达
+FIELD_DETOUR: actual=7.21147644519806 ideal=7.16227766016838
+PASS: 空旷区域使用连续欧氏圆弧 (19.75, 0.0, 23.17)
+PASS: 空旷区域使用连续欧氏圆弧 (17.1, 0.0, 16.25)
+PASS: 空旷区域使用连续欧氏圆弧 (18.3, 0.0, 20.2)
+PASS: 实体障碍内部不可显形
+PASS: 对角相接的封闭空间没有零宽度漏声
+PASS: 不连通空间不存在声学路径
+FIELD_SAMPLE_PREPARE_MS: 865.078
+FIELD_IMAGE_MS: 8.714
+PASS: 显形纹理每米4个采样点
+PASS: GPU距离纹理与听觉查询共用同一连续路径
+PASS: 墙体内部距离纹理明确标记不可达
+FIELD_WAVE_AND_IMAGE_MS: mean=13.1636 max=16.758
+ACOUSTIC_FIELD_TEST_RESULT: PASS failures=0
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+PASS: 地图存在隔墙相邻、经门洞可绕行的格对
+ACOUSTIC_PAIR: [(19, 2), (24, 2)] straight=5.0 path=7.21639752388
+PASS: 圆弧传播遇实体墙后，长度计入开放门洞绕行
+PASS: 近处隔墙格不在短程声波的可达范围
+PASS: 声波到达碰撞体前，远处监听者未收到听觉证据
+PASS: 门洞路径到达前，墙后环境未提前显形
+PASS: 声波到达后，监听者仅收到一次证据
+PASS: 听觉事件的到达时间为路径距离 / 传播速度
+PASS: 播放静音不改变游戏声强
+PASS: 听觉只传递该次固定发声位置
+PASS: 共享显形数据采用同一可达距离与到达时间
+PASS: 同一个声波不会反复更新监听者证据
+PASS: 走进已经扫过的格子不会收到旧声波的新证据
+PASS: 空旷区对角传播为欧氏距离，不呈曼哈顿菱形
+PASS: 同半径轴向与斜向声波几乎同时抵达
+PASS: 同一地面位置的高处使用半球径向距离
+PASS: 地面波前到达时，同一 XZ 的高处尚未收到证据
+PASS: 半球波前到达高处后才发出听觉证据
+PASS: 高处到达时间包含高度差
+PASS: 持续发声 500 次后活跃声波不超过配置上限
+PASS: 移动发声的连续距离纹理缓存受上限约束
+PASS: 持续发声不新增音效节点
+PASS: 播放音效数量受固定池上限约束
+PASS: 传播结束后路径缓存与声波事件全部回收
+PASS: 重置清空声波计数、时钟和播放状态
+PASS: 重置清空世界显形缓存
+PASS: 重置释放旧声波与连续距离缓存
+SOUND_TEST_RESULT: PASS failures=0
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+PASS: 无遮挡、距离内且前方玩家可见
+PASS: 视野角排除背后玩家
+PASS: 视距限制排除远处玩家
+PASS: 实体中枢障碍阻挡视觉射线
+PASS: 自身探测声不触发调查或更新玩家证据
+PASS: 玩家声只触发前往该次发声坐标的调查
+PASS: 仅实际探测命中玩家后确认位置并追逐
+PASS: 连续五秒失去有效证据后进入搜索
+PASS: 隐藏玩家移动不会更新最后已知位置
+PASS: 搜索超时后回到巡逻
+PASS: 进入前摇不立即伤害玩家
+PASS: 前摇结束前0.2秒锁定方向
+PASS: 锁定后不再追随侧移玩家转向
+PASS: 范围内侧移到扇形之外可躲避攻击
+PASS: 落空仍进入独立攻击判定阶段
+PASS: 攻击落空也必须恢复，不能立即再次攻击
+PASS: 距离与方向均满足时实体墙仍阻挡攻击
+PASS: 后退拉开距离可躲避攻击
+PASS: 仅有限距离、锁定方向、无遮挡条件全通过时命中
+PASS: 命中后同样恢复，判定不重复发出
+PASS: 约一秒恢复结束后才能恢复追逐
+PASS: 信标独立阶段立即持续追逐
+PASS: 实际3D移动沿四邻接路径绕过实体障碍，未穿墙
+PASS: 绕行后能到达玩家附近，未卡在墙角
+PASS: 信标阶段允许持续更新位置证据
+PASS: 命中同步冻结场景后安全停止物理回调，无移除body继续移动错误
+MONSTER_TEST: 26 checks, 0 failures
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+PASS D: exit without core never wins
+PASS D: unactivated core cannot be picked up
+PASS D: real reachable clap activates core
+PASS D: activated unobstructed nearby core can be picked up
+PASS D: pickup explicitly enables continuous beacon tracking
+PASS D: beacon warning displayed
+PASS D: repeated interaction does not duplicate pickup
+PASS D: carried core at exit wins immediately
+PASS D: restart 0 returns to intro
+PASS D: restart resets core and alarm
+PASS D: restart clears waves and audio
+PASS D: restart does not accumulate session nodes
+PASS D: failure freezes game and presents restart
+PASS D: restart 1 returns to intro
+PASS D: restart resets core and alarm
+PASS D: restart clears waves and audio
+PASS D: restart does not accumulate session nodes
+PASS D: failure freezes game and presents restart
+PASS D: restart 2 returns to intro
+PASS D: restart resets core and alarm
+PASS D: restart clears waves and audio
+PASS D: restart does not accumulate session nodes
+PASS D: failure freezes game and presents restart
+GAMEPLAY failures=0
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+PASS E: real movement reaches deep machine room with active AI
+PASS E: reachable clap then real pickup
+PASS E: active pursuer switched to beacon tracking
+PASS E: full expedition + pickup + alternate return route wins
+METRICS viewport=(64, 64) physics_samples=1145 elapsed_seconds=18.936788 rendered_frames=0 capture=false last_fps=144.0 renderer=forward_plus
+PASS E: victory restart produces fresh scene
+PASS E: visible attack windup precedes failure
+PASS E: actual attack hit produces failure
+PASS E: actual defeat restart resets scene
+PLAYTHROUGH failures=0
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+AUDIO_TEST_RESULT: SKIP — headless 使用 Dummy 音频；须去掉 --headless 验证真实混音输出。
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+SKIP OCCLUSION: headless display has no graphical depth / pixel verification
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+INPUT graphical mouse capture: SKIP headless
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+WAVE_VISUAL_RESULT: SKIP — headless cannot verify curved fronts in GPU pixels
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+Metal 4.0 - Forward+ - Using Device #0: Apple - Apple M4 (Apple9)
+
+PASS: 地图存在隔墙相邻、经门洞可绕行的格对
+ACOUSTIC_PAIR: [(19, 2), (24, 2)] straight=5.0 path=7.21639752388
+PASS: 圆弧传播遇实体墙后，长度计入开放门洞绕行
+PASS: 近处隔墙格不在短程声波的可达范围
+PASS: 声波到达碰撞体前，远处监听者未收到听觉证据
+PASS: 门洞路径到达前，墙后环境未提前显形
+PASS: 声波到达后，监听者仅收到一次证据
+PASS: 听觉事件的到达时间为路径距离 / 传播速度
+PASS: 播放静音不改变游戏声强
+PASS: 听觉只传递该次固定发声位置
+PASS: 共享显形数据采用同一可达距离与到达时间
+PASS: Forward+ 可回读该声波所在的 GPU 距离层
+PASS: Forward+ GPU 的四个双线性距离样本与听觉使用的数据一致
+PASS: 同一个声波不会反复更新监听者证据
+PASS: 走进已经扫过的格子不会收到旧声波的新证据
+PASS: 空旷区对角传播为欧氏距离，不呈曼哈顿菱形
+PASS: 同半径轴向与斜向声波几乎同时抵达
+PASS: 同一地面位置的高处使用半球径向距离
+PASS: 地面波前到达时，同一 XZ 的高处尚未收到证据
+PASS: 半球波前到达高处后才发出听觉证据
+PASS: 高处到达时间包含高度差
+PASS: 持续发声 500 次后活跃声波不超过配置上限
+PASS: 移动发声的连续距离纹理缓存受上限约束
+PASS: 持续发声不新增音效节点
+PASS: 播放音效数量受固定池上限约束
+PASS: 传播结束后路径缓存与声波事件全部回收
+PASS: 重置清空声波计数、时钟和播放状态
+PASS: 重置清空世界显形缓存
+PASS: 重置释放旧声波与连续距离缓存
+SOUND_TEST_RESULT: PASS failures=0
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+Metal 4.0 - Forward+ - Using Device #0: Apple - Apple M4 (Apple9)
+
+AUDIO_CAPTURE: walk frames=6144 rms=0.117589 peak=0.619150
+PASS: walk 实际 Master 混音输出非静音
+PASS: walk 播放后音频节点总量不变
+AUDIO_CAPTURE: run frames=6656 rms=0.139064 peak=0.659095
+PASS: run 实际 Master 混音输出非静音
+PASS: run 播放后音频节点总量不变
+AUDIO_CAPTURE: clap frames=6656 rms=0.148348 peak=0.658120
+PASS: clap 实际 Master 混音输出非静音
+PASS: clap 播放后音频节点总量不变
+AUDIO_CAPTURE: probe frames=7680 rms=0.244087 peak=0.765578
+PASS: probe 实际 Master 混音输出非静音
+PASS: probe 播放后音频节点总量不变
+AUDIO_CAPTURE: windup frames=6656 rms=0.182928 peak=0.758121
+PASS: windup 实际 Master 混音输出非静音
+PASS: windup 播放后音频节点总量不变
+AUDIO_CAPTURE: pickup frames=7168 rms=0.150226 peak=0.430016
+PASS: pickup 实际 Master 混音输出非静音
+PASS: pickup 播放后音频节点总量不变
+AUDIO_CAPTURE: victory frames=6656 rms=0.126004 peak=0.231580
+PASS: victory 实际 Master 混音输出非静音
+PASS: victory 播放后音频节点总量不变
+AUDIO_CAPTURE: defeat frames=7168 rms=0.322636 peak=0.757598
+PASS: defeat 实际 Master 混音输出非静音
+PASS: defeat 播放后音频节点总量不变
+PASS: 连续触发 200 次音效仍受固定音频池限制
+PASS: 测试结束停止全部音频
+AUDIO_TEST_RESULT: PASS failures=0
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+Metal 4.0 - Forward+ - Using Device #0: Apple - Apple M4 (Apple9)
+
+OCCLUSION dark wall center RGB=(0.011765, 0.027451, 0.05098)
+PASS unrevealed opaque wall hides a bright target across the wall
+OCCLUSION debug wall center RGB=(0.482353, 0.596079, 0.678431)
+PASS developer lighting reveals the same wall surface
+PASS developer lighting still occludes the magenta target
+OCCLUSION exposed target center RGB=(1.0, 0.0, 1.0)
+PASS hiding architecture exposes the bright magenta target at the same pixel
+PASS black wall depth, rather than target brightness or camera orientation, caused occlusion
+OCCLUSION graphical failures=0
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+Metal 4.0 - Forward+ - Using Device #0: Apple - Apple M4 (Apple9)
+
+PASS input: captured relative mouse motion rotates yaw and pitch
+PASS input: Esc pauses and releases cursor
+PASS input: pause freezes acoustic and evidence clock
+PASS input: Esc resumes and captures cursor
+PASS input: F1 toggles developer view
+PASS input: E reaches real interaction handler
+PASS input: R rebuilds scene from result screen
+INPUT failures=0
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+Metal 4.0 - Forward+ - Using Device #0: Apple - Apple M4 (Apple9)
+
+WAVE_PIXEL angle=0 inside=0.5725 outside=0.0510
+PASS radius 4.2 m reached at 0 degrees, including diagonals
+PASS radius 6.0 m remains dark at 0 degrees
+WAVE_PIXEL angle=45 inside=0.5773 outside=0.0510
+PASS radius 4.2 m reached at 45 degrees, including diagonals
+PASS radius 6.0 m remains dark at 45 degrees
+WAVE_PIXEL angle=90 inside=0.5725 outside=0.0510
+PASS radius 4.2 m reached at 90 degrees, including diagonals
+PASS radius 6.0 m remains dark at 90 degrees
+WAVE_PIXEL angle=135 inside=0.5717 outside=0.0510
+PASS radius 4.2 m reached at 135 degrees, including diagonals
+PASS radius 6.0 m remains dark at 135 degrees
+WAVE_PIXEL angle=180 inside=0.5634 outside=0.0510
+PASS radius 4.2 m reached at 180 degrees, including diagonals
+PASS radius 6.0 m remains dark at 180 degrees
+WAVE_PIXEL angle=225 inside=0.5656 outside=0.0510
+PASS radius 4.2 m reached at 225 degrees, including diagonals
+PASS radius 6.0 m remains dark at 225 degrees
+WAVE_PIXEL angle=270 inside=0.5634 outside=0.0510
+PASS radius 4.2 m reached at 270 degrees, including diagonals
+PASS radius 6.0 m remains dark at 270 degrees
+WAVE_PIXEL angle=315 inside=0.5717 outside=0.0510
+PASS radius 4.2 m reached at 315 degrees, including diagonals
+PASS radius 6.0 m remains dark at 315 degrees
+PASS saved graphical evidence v0.2-circular-front.png
+HEMISPHERE_PIXEL radius=5 low=0.4000 high=0.0510
+PASS hemisphere has reached the lower part of one continuous wall face
+PASS upper part of that same face remains dark until the hemisphere arrives
+PASS saved graphical evidence v0.2-hemisphere-wall.png
+HEMISPHERE_PIXEL radius=6.2 high=0.5739
+PASS the high point lights later as radius expands; wall height is not lit all at once
+WAVE_VISUAL_RESULT: PASS failures=0
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+Metal 4.0 - Forward+ - Using Device #0: Apple - Apple M4 (Apple9)
+
+PASS E: real movement reaches deep machine room with active AI
+PASS E: reachable clap then real pickup
+PASS E: active pursuer switched to beacon tracking
+PASS E: full expedition + pickup + alternate return route wins
+METRICS viewport=(1920, 1080) physics_samples=1149 elapsed_seconds=19.149208 rendered_frames=2259 capture=true last_fps=119.0 renderer=forward_plus
+PASS E: victory restart produces fresh scene
+PASS E: visible attack windup precedes failure
+PASS E: actual attack hit produces failure
+PASS E: actual defeat restart resets scene
+PLAYTHROUGH failures=0

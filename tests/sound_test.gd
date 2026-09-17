@@ -23,7 +23,7 @@ func _on_arrived(event: Dictionary, listener_id: String) -> void:
 		_deliveries.append(event)
 
 
-func _find_wall_pair(data: LevelData) -> Array[Vector2i]:
+func _find_wall_pair(data: LevelData, field: AcousticField) -> Array[Vector2i]:
 	for y: int in range(1, LevelData.HEIGHT - 1):
 		for x: int in range(1, LevelData.WIDTH - 1):
 			var a := Vector2i(x, y)
@@ -36,8 +36,9 @@ func _find_wall_pair(data: LevelData) -> Array[Vector2i]:
 					var b: Vector2i = a + offset * thickness
 					if not data.is_open(b):
 						continue
-					var path_distances: Dictionary = data.distances_from(data.cell_to_world(a), 14.0)
-					if path_distances.has(b) and float(path_distances[b]) > float(thickness) + 2.0:
+					var wave: Dictionary = field.build_wave(data.cell_to_world(a), 14.0)
+					var distance: float = field.distance_at(wave, data.cell_to_world(b))
+					if is_finite(distance) and distance > float(thickness) + 2.0:
 						return [a, b]
 					break
 	return []
@@ -55,21 +56,20 @@ func _run() -> void:
 	var listener := Node3D.new()
 	root.add_child(listener)
 	sound.register_listener("test_listener", listener)
-	var pair: Array[Vector2i] = _find_wall_pair(data)
+	var pair: Array[Vector2i] = _find_wall_pair(data, sound.acoustic_field)
 	_check(pair.size() == 2, "地图存在隔墙相邻、经门洞可绕行的格对")
 	if pair.size() != 2:
 		quit(1)
 		return
 	var origin: Vector3 = data.cell_to_world(pair[0])
 	listener.global_position = data.cell_to_world(pair[1])
-	var path_distances: Dictionary = data.distances_from(origin, 14.0)
-	var path_distance: float = float(path_distances[pair[1]])
+	var event: Dictionary = sound.emit_sound("clap", "player", origin)
+	var path_distance: float = sound.event_distance(event, listener.global_position)
 	var straight_distance: float = origin.distance_to(listener.global_position)
 	print("ACOUSTIC_PAIR: ", pair, " straight=", straight_distance, " path=", path_distance)
-	_check(path_distance > straight_distance + 2.0, "传播长度计入门洞绕行，非直线球")
-	_check(not data.distances_from(origin, straight_distance + 0.5).has(pair[1]), "近处隔墙格不在短程声波的可达范围")
-
-	var event: Dictionary = sound.emit_sound("clap", "player", origin)
+	_check(path_distance > straight_distance + 2.0, "圆弧传播遇实体墙后，长度计入开放门洞绕行")
+	var short_wave: Dictionary = sound.acoustic_field.build_wave(origin, straight_distance + 0.5)
+	_check(is_inf(sound.acoustic_field.distance_at(short_wave, listener.global_position)), "近处隔墙格不在短程声波的可达范围")
 	var body_radius: float = float(config.get("sound_listener_radius", 0.30))
 	var speed: float = float(config["propagation_speed"])
 	var before_arrival: float = (path_distance - body_radius - 0.02) / speed
@@ -83,10 +83,20 @@ func _run() -> void:
 		_check(float(_deliveries[0]["intensity"]) == float(event["intensity"]), "播放静音不改变游戏声强")
 		_check(_deliveries[0]["position"] == origin, "听觉只传递该次固定发声位置")
 	_check(is_equal_approx(sound.reveal_arrival_time(pair[1]), path_distance / speed), "共享显形数据采用同一可达距离与到达时间")
-	# Godot's headless dummy renderer does not upload ImageTexture.update();
-	# graphical runs additionally validate the actual GPU texture readback.
+	# The continuous distance Texture2DArray is the actual shader input.
+	# Headless does not upload GPU layers; only graphical runs read them back.
 	if DisplayServer.get_name() != "headless":
-		_check(is_equal_approx(sound.reveal_texture.get_image().get_pixel(pair[1].x, pair[1].y).r, path_distance / speed), "Forward+ GPU 纹理中的到达时间与声学数据一致")
+		var gpu_layer: Image = sound.distance_texture.get_layer_data(int(event["slot"]))
+		var cpu_layer: Image = event["distance_image"]
+		_check(gpu_layer != null, "Forward+ 可回读该声波所在的 GPU 距离层")
+		if gpu_layer != null:
+			var resolution: int = int(config.get("acoustic_field_resolution", 4))
+			var pixel := Vector2i(pair[1].x * resolution + resolution / 2, pair[1].y * resolution + resolution / 2)
+			var max_error: float = 0.0
+			for offset: Vector2i in [Vector2i.ZERO, Vector2i.LEFT, Vector2i.UP, Vector2i(-1, -1)]:
+				var sample: Vector2i = pixel + offset
+				max_error = maxf(max_error, absf(gpu_layer.get_pixelv(sample).r - cpu_layer.get_pixelv(sample).r))
+			_check(max_error < 0.00001, "Forward+ GPU 的四个双线性距离样本与听觉使用的数据一致")
 	sound._physics_process(0.1)
 	_check(_deliveries.size() == 1, "同一个声波不会反复更新监听者证据")
 
@@ -101,11 +111,35 @@ func _run() -> void:
 
 	sound.clear()
 	_deliveries.clear()
+	# Both endpoints sit at texture texel centers to isolate the radial rule
+	# from sub-texel interpolation. The diagonal is sqrt(8), never 4 meters.
+	var open_origin := Vector3(16.125, 0.0, 21.125)
+	var diagonal := Vector3(18.125, 0.0, 23.125)
+	var radial_event: Dictionary = sound.emit_sound("clap", "player", open_origin)
+	var diagonal_distance: float = sound.event_distance(radial_event, diagonal)
+	_check(absf(diagonal_distance - sqrt(8.0)) < 0.00001, "空旷区对角传播为欧氏距离，不呈曼哈顿菱形")
+	var axial := Vector3(open_origin.x + sqrt(8.0), 0.0, open_origin.z)
+	_check(absf(sound.event_distance(radial_event, axial) - diagonal_distance) < 0.01, "同半径轴向与斜向声波几乎同时抵达")
+	var higher := Vector3(diagonal.x, 3.0, diagonal.z)
+	var higher_distance: float = sound.event_distance(radial_event, higher)
+	_check(absf(higher_distance - sqrt(diagonal_distance * diagonal_distance + 9.0)) < 0.00001, "同一地面位置的高处使用半球径向距离")
+	listener.global_position = higher
+	sound._physics_process(diagonal_distance / speed)
+	_check(_deliveries.is_empty(), "地面波前到达时，同一 XZ 的高处尚未收到证据")
+	sound._physics_process((higher_distance - diagonal_distance) / speed)
+	_check(_deliveries.size() == 1, "半球波前到达高处后才发出听觉证据")
+	if not _deliveries.is_empty():
+		_check(is_equal_approx(float(_deliveries[0]["arrival_time"]), higher_distance / speed), "高处到达时间包含高度差")
+
+	sound.clear()
+	_deliveries.clear()
 	var stable_node_count: int = sound.get_child_count()
 	for index: int in range(500):
-		sound.emit_sound("run", "player", origin)
+		var moving_origin: Vector3 = origin + Vector3(float(index % 40) * 0.005, 0.0, 0.0)
+		sound.emit_sound("run", "player", moving_origin)
 		sound._physics_process(0.025)
 	_check(sound.active_waves.size() <= int(config["max_waves"]), "持续发声 500 次后活跃声波不超过配置上限")
+	_check(sound._field_cache.size() <= int(config.get("max_field_cache", 16)), "移动发声的连续距离纹理缓存受上限约束")
 	_check(sound.get_child_count() == stable_node_count, "持续发声不新增音效节点")
 	_check(sound.active_voice_count() <= int(config["max_audio_voices"]), "播放音效数量受固定池上限约束")
 	sound._physics_process(10.0)
@@ -113,5 +147,6 @@ func _run() -> void:
 	sound.clear()
 	_check(sound.clock == 0.0 and sound.emitted_count == 0 and sound.active_voice_count() == 0, "重置清空声波计数、时钟和播放状态")
 	_check(sound.reveal_arrival_time(pair[1]) == -100.0, "重置清空世界显形缓存")
+	_check(sound._field_cache.is_empty() and sound.active_waves.is_empty(), "重置释放旧声波与连续距离缓存")
 	print("SOUND_TEST_RESULT: ", "PASS" if _failures == 0 else "FAIL", " failures=", _failures)
 	quit(0 if _failures == 0 else 1)

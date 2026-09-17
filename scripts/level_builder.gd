@@ -12,9 +12,6 @@ func setup(level_data: LevelData) -> void:
 	material.shader = preload("res://shaders/environment.gdshader")
 	material.set_shader_parameter("grid_size", Vector2(LevelData.WIDTH, LevelData.HEIGHT))
 	material.set_shader_parameter("cell_size", LevelData.CELL_SIZE)
-	var initial: Image = Image.create(LevelData.WIDTH, LevelData.HEIGHT, false, Image.FORMAT_RGBAF)
-	initial.fill(Color(-100.0, -100.0, 0.0, 1.0))
-	material.set_shader_parameter("reveal_texture", ImageTexture.create_from_image(initial))
 	_surface = SurfaceTool.new()
 	_surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 	_build_floor_and_walls()
@@ -27,9 +24,6 @@ func setup(level_data: LevelData) -> void:
 	add_child(architecture)
 	_build_collision()
 	_surface = null
-
-func set_reveal_texture(texture: Texture2D) -> void:
-	material.set_shader_parameter("reveal_texture", texture)
 
 func update_view(player_position: Vector3, time: float, debug: bool) -> void:
 	material.set_shader_parameter("player_position", player_position)

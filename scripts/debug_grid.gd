@@ -16,7 +16,7 @@ func _draw() -> void:
 	draw_rect(Rect2(Vector2.ZERO, Vector2(LevelData.WIDTH, LevelData.HEIGHT) * SCALE), Color(0.015, 0.025, 0.04, 0.94))
 	var wave: Dictionary = {} if sound.active_waves.is_empty() else sound.active_waves.back()
 	var distances: Dictionary = wave.get("distances", {})
-	var radius: float = (sound.clock - float(wave.get("time", sound.clock))) * float(player.config.get("propagation_speed", 10.0))
+	var radius: float = (sound.clock - float(wave.get("time", sound.clock))) * float(player.config.get("propagation_speed", 24.0))
 	for cell: Vector2i in data.walkable:
 		var color := Color(0.12, 0.18, 0.21)
 		if distances.has(cell):

@@ -11,7 +11,7 @@
   "clap_radius": 14.0,
   "clap_cooldown": 1.5,
   "reveal_duration": 2.0,
-  "propagation_speed": 10.0,
+  "propagation_speed": 24.0,
   "probe_radius": 7.0,
   "probe_interval": 3.0,
   "monster_speed": 3.6,
@@ -35,5 +35,8 @@
   "attack_start_range": 1.77,
   "attack_strike_duration": 0.12,
   "monster_repath_interval": 0.45,
-  "sound_listener_radius": 0.3
+  "sound_listener_radius": 0.3,
+  "acoustic_field_resolution": 4,
+  "wave_front_width": 1.1,
+  "max_field_cache": 16
 }

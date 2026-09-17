@@ -42,7 +42,6 @@ func _build_session() -> void:
 	level = LevelBuilder.new()
 	session.add_child(level)
 	level.setup(data)
-	level.material.set_shader_parameter("reveal_duration", float(config["reveal_duration"]))
 	var world := WorldEnvironment.new()
 	world.environment = Environment.new()
 	world.environment.background_mode = Environment.BG_COLOR
@@ -60,7 +59,7 @@ func _build_session() -> void:
 	sound.name = "SoundSystem"
 	session.add_child(sound)
 	sound.setup(data, config)
-	level.set_reveal_texture(sound.reveal_texture)
+	sound.bind_material(level.material)
 	monster = EchoMonster.new()
 	monster.name = "Monster"
 	session.add_child(monster)
