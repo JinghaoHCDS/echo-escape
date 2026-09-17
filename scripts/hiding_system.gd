@@ -173,6 +173,9 @@ func _physics_process(delta: float) -> void:
 		return
 	if _phase == "entering":
 		player.rotation.y = lerp_angle(player.rotation.y, PI, minf(1.0, delta * 7.0))
+		# Looking down at the interaction handle should not leave the crouched
+		# view staring at the floor. Settle toward the opening during entry.
+		player.camera.rotation.x = lerpf(player.camera.rotation.x, 0.0, minf(1.0, delta * 7.0))
 	if player.global_position.distance_to(target) < 0.018:
 		_route.pop_front()
 

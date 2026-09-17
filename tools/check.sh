@@ -10,13 +10,13 @@ run_checked() {
   if grep -Eq 'SCRIPT ERROR:|^ERROR:|^FAIL ' "$check_log"; then return 1; fi
 }
 run_checked --headless --path . --editor --import --quit
-for test in phase_a acoustic_field sound monster gameplay playthrough audio occlusion input wave_visual; do
+for test in phase_a acoustic_field sound hiding cabinet_sound monster hiding_monster gameplay hiding_integration playthrough audio occlusion input wave_visual; do
   if [[ -f "tests/${test}_test.gd" ]]; then
     run_checked --headless --path . --script "tests/${test}_test.gd"
   fi
 done
 if [[ "${1:-}" == "--graphics" ]]; then
-  for test in sound audio occlusion input wave_visual playthrough; do
+  for test in sound cabinet_sound audio occlusion input wave_visual hiding_integration playthrough; do
     run_checked --path . --script "tests/${test}_test.gd"
   done
 fi

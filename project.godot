@@ -3,6 +3,7 @@ config_version=5
 
 [application]
 config/name="回声撤离 · Echo Escape"
+config/version="0.3.0"
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
 config/description="用声音辨路，带着信标撤离。原创 3D 声音潜行原型。"

@@ -131,6 +131,7 @@ func modal(kind: String, title: String, body: String) -> void:
 	modal_kind = kind
 	modal_title.text = title
 	modal_body.text = body
+	modal_body.size.x = 630.0 if kind == "pause" else 1210.0
 	action_button.text = "进入静默建筑" if kind == "intro" else ("继续探索" if kind == "pause" else "[ R ]  重新开始")
 	sliders.visible = kind == "pause"
 	overlay.show()

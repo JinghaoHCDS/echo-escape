@@ -39,7 +39,7 @@ func _run() -> void:
 	AudioServer.add_bus_effect(0, capture)
 	var stable_nodes: int = sound.get_child_count()
 	await create_timer(0.08).timeout
-	for kind: String in ["walk", "run", "clap", "probe", "windup", "pickup", "victory", "defeat"]:
+	for kind: String in ["walk", "run", "clap", "probe", "windup", "pickup", "victory", "defeat", "inspect", "cabinet"]:
 		sound.clear()
 		# Let the audio thread drain the previous stream before starting a cue.
 		await create_timer(0.06).timeout

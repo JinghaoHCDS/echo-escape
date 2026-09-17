@@ -48,6 +48,8 @@ func run() -> void:
 		check(game != null and game.status == "intro", "D: restart %d returns to intro" % index)
 		check(not game.objectives.has_item and not game.objectives.is_activated and not game.monster.alarm_active, "D: restart resets core and alarm")
 		check(game.sound.active_waves.is_empty() and game.sound.active_voice_count() == 0, "D: restart clears waves and audio")
+		check(game.hiding.current_spot_id.is_empty() and game.player.hiding_spot_id.is_empty() and not game.hiding.is_transitioning(), "D: restart clears hiding ownership and transition")
+		check(is_equal_approx(game.player.camera.position.y, float(game.config["hide_standing_eye_height"])), "D: restart restores standing camera")
 		check(game.session.get_child_count() == session_count, "D: restart does not accumulate session nodes")
 		game.start_game()
 		game.finish(false, "test fixture")

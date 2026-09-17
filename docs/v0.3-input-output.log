@@ -1,0 +1,11 @@
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+Metal 4.0 - Forward+ - Using Device #0: Apple - Apple M4 (Apple9)
+
+PASS input: captured relative mouse motion rotates yaw and pitch
+PASS input: Esc pauses and releases cursor
+PASS input: pause freezes acoustic and evidence clock
+PASS input: Esc resumes and captures cursor
+PASS input: F1 toggles developer view
+PASS input: E reaches real interaction handler
+PASS input: R rebuilds scene from result screen
+INPUT failures=0

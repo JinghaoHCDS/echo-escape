@@ -1,0 +1,503 @@
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+[   0% ] first_scan_filesystem | Started 项目初始化 (5 steps)
+[   0% ] first_scan_filesystem | 正在扫描文件结构……
+[  16% ] first_scan_filesystem | 正在加载全局类名……
+[  33% ] first_scan_filesystem | 正在校验 GDExtension……
+[  50% ] first_scan_filesystem | 正在创建自动加载脚本……
+[  66% ] first_scan_filesystem | 正在初始化插件……
+[  83% ] first_scan_filesystem | 正在启动文件扫描……
+[ DONE ] first_scan_filesystem
+
+[   0% ] update_scripts_classes | Started 正在注册全局类…… (5 steps)
+[   0% ] update_scripts_classes | EchoMonster
+[  16% ] update_scripts_classes | SoundSystem
+[  33% ] update_scripts_classes |
+[  50% ] update_scripts_classes |
+[  66% ] update_scripts_classes |
+[ DONE ] update_scripts_classes
+
+[   0% ] loading_editor_layout | Started 正在加载编辑器 (5 steps)
+[   0% ] loading_editor_layout | 正在加载编辑器布局……
+[  16% ] loading_editor_layout | 正在加载停靠面板……
+[ DONE ] loading_editor_layout
+
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+PASS A: capsule blocked by west wall
+PASS A: floor blocks gravity
+PASS A: entry and deep item connected
+PASS A: every navigation waypoint is in physical open grid
+PASS A: pushing into wall does not emit footsteps
+PHASE A failures=0
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+FIELD_SETUP_MS: 5.197 corners=48
+PASS: 隔墙直线确实被墙体阻挡
+PASS: 声音绕门洞路径长于直线，短于旧曼哈顿路径
+PASS: 绕角距离接近连续最短路（厘米级保守余量）
+PASS: 半径不足时隔墙接收点不可达
+FIELD_DETOUR: actual=7.21147644519806 ideal=7.16227766016838
+PASS: 空旷区域使用连续欧氏圆弧 (19.75, 0.0, 23.17)
+PASS: 空旷区域使用连续欧氏圆弧 (17.1, 0.0, 16.25)
+PASS: 空旷区域使用连续欧氏圆弧 (18.3, 0.0, 20.2)
+PASS: 实体障碍内部不可显形
+PASS: 对角相接的封闭空间没有零宽度漏声
+PASS: 不连通空间不存在声学路径
+FIELD_SAMPLE_PREPARE_MS: 1216.669
+FIELD_IMAGE_MS: 8.112
+PASS: 显形纹理每米4个采样点
+PASS: GPU距离纹理与听觉查询共用同一连续路径
+PASS: 墙体内部距离纹理明确标记不可达
+FIELD_WAVE_AND_IMAGE_MS: mean=15.9902 max=16.438
+ACOUSTIC_FIELD_TEST_RESULT: PASS failures=0
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+PASS: 地图存在隔墙相邻、经门洞可绕行的格对
+ACOUSTIC_PAIR: [(19, 2), (24, 2)] straight=5.0 path=7.21639752388
+PASS: 圆弧传播遇实体墙后，长度计入开放门洞绕行
+PASS: 近处隔墙格不在短程声波的可达范围
+PASS: 声波到达碰撞体前，远处监听者未收到听觉证据
+PASS: 门洞路径到达前，墙后环境未提前显形
+PASS: 声波到达后，监听者仅收到一次证据
+PASS: 听觉事件的到达时间为路径距离 / 传播速度
+PASS: 播放静音不改变游戏声强
+PASS: 听觉只传递该次固定发声位置
+PASS: 共享显形数据采用同一可达距离与到达时间
+PASS: 同一个声波不会反复更新监听者证据
+PASS: 走进已经扫过的格子不会收到旧声波的新证据
+PASS: 空旷区对角传播为欧氏距离，不呈曼哈顿菱形
+PASS: 同半径轴向与斜向声波几乎同时抵达
+PASS: 同一地面位置的高处使用半球径向距离
+PASS: 地面波前到达时，同一 XZ 的高处尚未收到证据
+PASS: 半球波前到达高处后才发出听觉证据
+PASS: 高处到达时间包含高度差
+PASS: 弱光尾扩展到 1.5 倍，听觉半径保持 4 米
+PASS: 原半球边缘之外仍有连续可达距离场
+PASS: 强弱范围边界的强度连续，不产生亮度断层
+PASS: 外圈保持微亮并在有限外径平滑降至零
+PASS: 弱光尾也必须等待声路传播，不能提前显形
+PASS: 外圈显形不扩大怪物听觉、探测或道具监听范围
+PASS: 超过原作用半径的环境能获得弱光到达记录
+PASS: 声波寿命覆盖外圈残留，不在原半径寿命时截断弱光
+PASS: 弱光残留结束后正确回收声波层
+PASS: 持续发声 500 次后活跃声波不超过配置上限
+PASS: 移动发声的连续距离纹理缓存受上限约束
+PASS: 持续发声不新增音效节点
+PASS: 播放音效数量受固定池上限约束
+PASS: 传播结束后路径缓存与声波事件全部回收
+PASS: 重置清空声波计数、时钟和播放状态
+PASS: 重置清空世界显形缓存
+PASS: 重置释放旧声波与连续距离缓存
+SOUND_TEST_RESULT: PASS failures=0
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+PASS HIDE: exactly two lockers and one table from shared data
+PASS HIDE: hollow furniture floor remains open while monster footprint is blocked: gallery_locker
+PASS HIDE: inside evidence resolves to a reachable entrance: gallery_locker
+PASS HIDE: monster reaches furniture approach without crossing footprint: gallery_locker
+PASS HIDE: hollow furniture floor remains open while monster footprint is blocked: archive_locker
+PASS HIDE: inside evidence resolves to a reachable entrance: archive_locker
+PASS HIDE: monster reaches furniture approach without crossing footprint: archive_locker
+PASS HIDE: hollow furniture floor remains open while monster footprint is blocked: atrium_table
+PASS HIDE: inside evidence resolves to a reachable entrance: atrium_table
+PASS HIDE: monster reaches furniture approach without crossing footprint: atrium_table
+PASS HIDE: facing nearby locker selects it
+PASS HIDE: looking away does not select locker
+PASS HIDE: closed real door blocks line of sight and attacks
+PASS HIDE: E starts validated locker entry
+PASS HIDE: capsule physically reaches hollow locker interior
+PASS HIDE: locker door closes after entry
+PASS HIDE: hiding suppresses locomotion and footsteps
+PASS HIDE: inspection opens locker without causing damage
+PASS HIDE: inspected cabinet has a physically open door
+PASS HIDE: E starts safe locker exit with real monster at inspection point
+PASS HIDE: exit clears posture and movement lock
+PASS HIDE: E starts table entry
+PASS HIDE: paused transition does not keep moving
+PASS HIDE: table entry shortens real capsule and lowers eye
+PASS HIDE: standing under tabletop is rejected by physical query
+PASS HIDE: crouched capsule genuinely fits under tabletop
+PASS HIDE: tabletop occludes elevated sight
+PASS HIDE: open table side can expose crouched player
+PASS HIDE: blocked standing exits reject leaving
+PASS HIDE: blocked exit neither teleports nor clears cover state
+PASS HIDE: table inspection safely exits beside real monster at inspection point
+PASS HIDE: forced table exit restores standing capsule
+PASS HIDE: solid partition blocks interaction through walls
+HIDING checks=33 failures=0
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+PASS: 关门柜阻挡外部探测，柜内不产生听觉证据
+PASS: 显形 Shader 的柜内区域与探测一起阻断
+PASS: 波前被关门阻挡后再开门，不补发旧探测与旧显形
+PASS: 关门时柜内鼓掌不能向外提供玩家位置证据
+PASS: 被封闭的柜内声波仍能显形内部空间
+PASS: 柜内鼓掌的外部显形层保持禁用
+PASS: 内部波前经过柜口后开门，不让过去的鼓掌重新外泄
+PASS: 波前抵达柜口时门已打开，允许向柜内继续传播
+PASS: 柜内距离累计外部声路与柜口到内部距离
+PASS: 抵达柜口不等于立即抵达柜内玩家
+PASS: 已过柜口的波继续传播，关门不会删除柜内世界状态
+PASS: 柜口传播保留准确累计延迟
+PASS: 经柜口的听觉仍提供原始发声位置
+PASS: 柜内声波尚未抵达开口时，外部仍无显形或听觉
+PASS: 开门柜内鼓掌通过柜口向外传播，累计路径长度
+PASS: 外部监听者在开门传播到达后收到一次原始鼓掌
+PASS: 柜口传播复用一个事件和距离层，不增殖声波或重复播放
+PASS: 柜口开合不分配额外音效节点
+PASS: 柜背与侧板阻挡声路，声音必须绕到正面柜口
+PASS: 桌底保持声路开放，探测可确认桌下玩家
+PASS: 重置清除柜口判定与声波缓存
+CABINET_GPU_RESULT: SKIP — headless cannot validate cabinet pixels
+CABINET_SOUND_RESULT: PASS failures=0
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+PASS: 无遮挡、距离内且前方玩家可见
+PASS: 视野角排除背后玩家
+PASS: 视距限制排除远处玩家
+PASS: 实体中枢障碍阻挡视觉射线
+PASS: 自身探测声不触发调查或更新玩家证据
+PASS: 玩家声只触发前往该次发声坐标的调查
+PASS: 仅实际探测命中玩家后确认位置并追逐
+PASS: 连续五秒失去有效证据后进入搜索
+PASS: 隐藏玩家移动不会更新最后已知位置
+PASS: 搜索超时后回到巡逻
+PASS: 进入前摇不立即伤害玩家
+PASS: 前摇结束前0.2秒锁定方向
+PASS: 锁定后不再追随侧移玩家转向
+PASS: 范围内侧移到扇形之外可躲避攻击
+PASS: 落空仍进入独立攻击判定阶段
+PASS: 攻击落空也必须恢复，不能立即再次攻击
+PASS: 距离与方向均满足时实体墙仍阻挡攻击
+PASS: 后退拉开距离可躲避攻击
+PASS: 仅有限距离、锁定方向、无遮挡条件全通过时命中
+PASS: 命中后同样恢复，判定不重复发出
+PASS: 约一秒恢复结束后才能恢复追逐
+PASS: 信标独立阶段立即持续追逐
+PASS: 实际3D移动沿四邻接路径绕过实体障碍，未穿墙
+PASS: 绕行后能到达玩家附近，未卡在墙角
+PASS: 信标阶段允许持续更新位置证据
+PASS: 命中同步冻结场景后安全停止物理回调，无移除body继续移动错误
+MONSTER_TEST: 26 checks, 0 failures
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+PASS: 未看见入藏不会查询或记录玩家藏点
+PASS: 真实视线目击进入后记住柜子并进入检查状态
+PASS: 藏点导航使用入口外快照而不是柜内坐标
+PASS: 玩家未被看见地离开不会通知怪物或刷新位置记忆
+PASS: 接近记住的藏点途中五秒无证据仍转入搜索
+PASS: 搜索结束清除旧藏点记忆
+PASS: 检查前半段有动作预告且不打开、不判死
+PASS: 1.2秒检查后只请求开柜或退出，仍未判定攻击
+PASS: 同次已检查藏点在持续信标下不会反复重启检查
+PASS: 关闭柜门的真实实体碰撞阻挡玩家姿态视线
+PASS: 柜门阻挡有限距离内的真实攻击射线
+PASS: 检查后开门仍先进行普通攻击前摇
+PASS: 躲藏状态本身不提供无敌，开门后的有效攻击可以命中
+PASS: 桌面确实遮挡斜向下看向桌底的低姿态视线
+PASS: 从开放桌侧看见低姿态玩家仍可发现
+PASS: 实际看见桌底玩家可形成合法检查证据
+PASS: 已交付的真实探测命中可以确认桌底藏点
+PASS: 入藏前发出但延迟到达的旧声音不覆盖较新的藏点证据
+PASS: 藏点外新听觉证据清除旧藏点并追该次声音快照
+PASS: 追新声音仍不读取玩家发声后移动的位置
+PASS: 攻击中收到新声可以修正记忆，但不取消前摇或改变锁定方向
+PASS: 信标允许确认遮挡后的藏点并继续检查追踪
+PASS: 只听到家具内部声音时调查可到入口结束，不因导航阻挡格永久卡住
+PASS: 真实柜子：怪物目击时玩家能够沿实体入口进入
+PASS: 真实柜子：完成入藏并关闭带实体碰撞的门
+PASS: 真实怪物沿导航到检查侧位并实际打开柜门
+PASS: 真实开柜后正常前摇能够命中柜内不闪避玩家，无永久无敌
+PASS: 普通目击追查能够完成开柜攻击，无需信标持续透视
+HIDING_MONSTER_TEST: 28 checks, 0 failures
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+PASS D: exit without core never wins
+PASS D: unactivated core cannot be picked up
+PASS D: real reachable clap activates core
+PASS D: activated unobstructed nearby core can be picked up
+PASS D: pickup explicitly enables continuous beacon tracking
+PASS D: beacon warning displayed
+PASS D: repeated interaction does not duplicate pickup
+PASS D: carried core at exit wins immediately
+PASS D: restart 0 returns to intro
+PASS D: restart resets core and alarm
+PASS D: restart clears waves and audio
+PASS D: restart clears hiding ownership and transition
+PASS D: restart restores standing camera
+PASS D: restart does not accumulate session nodes
+PASS D: failure freezes game and presents restart
+PASS D: restart 1 returns to intro
+PASS D: restart resets core and alarm
+PASS D: restart clears waves and audio
+PASS D: restart clears hiding ownership and transition
+PASS D: restart restores standing camera
+PASS D: restart does not accumulate session nodes
+PASS D: failure freezes game and presents restart
+PASS D: restart 2 returns to intro
+PASS D: restart resets core and alarm
+PASS D: restart clears waves and audio
+PASS D: restart clears hiding ownership and transition
+PASS D: restart restores standing camera
+PASS D: restart does not accumulate session nodes
+PASS D: failure freezes game and presents restart
+GAMEPLAY failures=0
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+PASS E resolves the selected locker only
+PASS pause freezes entry movement and sound clock
+PASS paused E cannot leave hiding or pick up an object
+PASS real E enters and closes the hollow locker
+PASS entering never triggers core pickup
+PASS hidden movement input produces neither displacement nor footsteps
+PASS actual exterior probe cannot confirm the player inside a closed locker
+PASS E exits the locker and restores movement
+PASS E enters the table with a real short capsule and low camera
+PASS beacon makes the real monster inspect the known hiding entrance
+PASS table inspection can complete a collision-safe exit with the monster present
+PASS inspection does not directly cause failure
+PASS result restart restores ownership, pose and movement
+PASS result restart resets doors and monster hiding memory
+HIDING_INTEGRATION_RESULT: failures=0 graphical=false
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+PASS E: real movement reaches deep machine room with active AI
+PASS E: reachable clap then real pickup
+PASS E: active pursuer switched to beacon tracking
+PASS E: full expedition + pickup + alternate return route wins
+METRICS viewport=(64, 64) physics_samples=1145 elapsed_seconds=18.912802 rendered_frames=0 capture=false last_fps=133.0 renderer=forward_plus
+PASS E: victory restart produces fresh scene
+PASS E: visible attack windup precedes failure
+PASS E: actual attack hit produces failure
+PASS E: actual defeat restart resets scene
+PLAYTHROUGH failures=0
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+AUDIO_TEST_RESULT: SKIP — headless 使用 Dummy 音频；须去掉 --headless 验证真实混音输出。
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+SKIP OCCLUSION: headless display has no graphical depth / pixel verification
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+INPUT graphical mouse capture: SKIP headless
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+
+WAVE_VISUAL_RESULT: SKIP — headless cannot verify curved fronts in GPU pixels
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+Metal 4.0 - Forward+ - Using Device #0: Apple - Apple M4 (Apple9)
+
+PASS: 地图存在隔墙相邻、经门洞可绕行的格对
+ACOUSTIC_PAIR: [(19, 2), (24, 2)] straight=5.0 path=7.21639752388
+PASS: 圆弧传播遇实体墙后，长度计入开放门洞绕行
+PASS: 近处隔墙格不在短程声波的可达范围
+PASS: 声波到达碰撞体前，远处监听者未收到听觉证据
+PASS: 门洞路径到达前，墙后环境未提前显形
+PASS: 声波到达后，监听者仅收到一次证据
+PASS: 听觉事件的到达时间为路径距离 / 传播速度
+PASS: 播放静音不改变游戏声强
+PASS: 听觉只传递该次固定发声位置
+PASS: 共享显形数据采用同一可达距离与到达时间
+PASS: Forward+ 可回读该声波所在的 GPU 距离层
+PASS: Forward+ GPU 的四个双线性距离样本与听觉使用的数据一致
+PASS: 同一个声波不会反复更新监听者证据
+PASS: 走进已经扫过的格子不会收到旧声波的新证据
+PASS: 空旷区对角传播为欧氏距离，不呈曼哈顿菱形
+PASS: 同半径轴向与斜向声波几乎同时抵达
+PASS: 同一地面位置的高处使用半球径向距离
+PASS: 地面波前到达时，同一 XZ 的高处尚未收到证据
+PASS: 半球波前到达高处后才发出听觉证据
+PASS: 高处到达时间包含高度差
+PASS: 弱光尾扩展到 1.5 倍，听觉半径保持 4 米
+PASS: 原半球边缘之外仍有连续可达距离场
+PASS: 强弱范围边界的强度连续，不产生亮度断层
+PASS: 外圈保持微亮并在有限外径平滑降至零
+PASS: 弱光尾也必须等待声路传播，不能提前显形
+PASS: 外圈显形不扩大怪物听觉、探测或道具监听范围
+PASS: 超过原作用半径的环境能获得弱光到达记录
+PASS: 声波寿命覆盖外圈残留，不在原半径寿命时截断弱光
+PASS: 弱光残留结束后正确回收声波层
+PASS: 持续发声 500 次后活跃声波不超过配置上限
+PASS: 移动发声的连续距离纹理缓存受上限约束
+PASS: 持续发声不新增音效节点
+PASS: 播放音效数量受固定池上限约束
+PASS: 传播结束后路径缓存与声波事件全部回收
+PASS: 重置清空声波计数、时钟和播放状态
+PASS: 重置清空世界显形缓存
+PASS: 重置释放旧声波与连续距离缓存
+SOUND_TEST_RESULT: PASS failures=0
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+Metal 4.0 - Forward+ - Using Device #0: Apple - Apple M4 (Apple9)
+
+PASS: 关门柜阻挡外部探测，柜内不产生听觉证据
+PASS: 显形 Shader 的柜内区域与探测一起阻断
+PASS: 波前被关门阻挡后再开门，不补发旧探测与旧显形
+PASS: 关门时柜内鼓掌不能向外提供玩家位置证据
+PASS: 被封闭的柜内声波仍能显形内部空间
+PASS: 柜内鼓掌的外部显形层保持禁用
+PASS: 内部波前经过柜口后开门，不让过去的鼓掌重新外泄
+PASS: 波前抵达柜口时门已打开，允许向柜内继续传播
+PASS: 柜内距离累计外部声路与柜口到内部距离
+PASS: 抵达柜口不等于立即抵达柜内玩家
+PASS: 已过柜口的波继续传播，关门不会删除柜内世界状态
+PASS: 柜口传播保留准确累计延迟
+PASS: 经柜口的听觉仍提供原始发声位置
+PASS: 柜内声波尚未抵达开口时，外部仍无显形或听觉
+PASS: 开门柜内鼓掌通过柜口向外传播，累计路径长度
+PASS: 外部监听者在开门传播到达后收到一次原始鼓掌
+PASS: 柜口传播复用一个事件和距离层，不增殖声波或重复播放
+PASS: 柜口开合不分配额外音效节点
+PASS: 柜背与侧板阻挡声路，声音必须绕到正面柜口
+PASS: 桌底保持声路开放，探测可确认桌下玩家
+PASS: 重置清除柜口判定与声波缓存
+CABINET_GPU baseline interior=0.0510 exterior=0.0510
+CABINET_GPU closed interior=0.0510 exterior=0.5020
+PASS: GPU：闭柜内保持黑暗，外部环境照常显形
+CABINET_GPU reopened interior=0.0510 exterior=0.4980
+PASS: GPU：错过柜口的波不会因稍后开门而补画柜内
+CABINET_GPU open interior=0.4941 exterior=0.5020
+PASS: GPU：开门时波经柜口进入，柜内连续显形
+CABINET_GPU internal interior=0.5137 exterior=0.0510
+PASS: GPU：关门后内部鼓掌只照亮柜内，外部不漏光
+CABINET_GPU side baseline=0.0510 lit=0.4627
+PASS: GPU：柜外侧面不会因距离纹理采进柜内而整面永黑
+PASS: 保存柜侧显形图形证据
+CABINET_GPU_RESULT: completed actual Forward+ pixel checks
+CABINET_SOUND_RESULT: PASS failures=0
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+Metal 4.0 - Forward+ - Using Device #0: Apple - Apple M4 (Apple9)
+
+AUDIO_CAPTURE: walk frames=7168 rms=0.108813 peak=0.619150
+PASS: walk 实际 Master 混音输出非静音
+PASS: walk 播放后音频节点总量不变
+AUDIO_CAPTURE: run frames=7168 rms=0.134006 peak=0.659095
+PASS: run 实际 Master 混音输出非静音
+PASS: run 播放后音频节点总量不变
+AUDIO_CAPTURE: clap frames=7680 rms=0.138208 peak=0.658120
+PASS: clap 实际 Master 混音输出非静音
+PASS: clap 播放后音频节点总量不变
+AUDIO_CAPTURE: probe frames=6656 rms=0.260526 peak=0.765578
+PASS: probe 实际 Master 混音输出非静音
+PASS: probe 播放后音频节点总量不变
+AUDIO_CAPTURE: windup frames=6656 rms=0.182703 peak=0.758121
+PASS: windup 实际 Master 混音输出非静音
+PASS: windup 播放后音频节点总量不变
+AUDIO_CAPTURE: pickup frames=6656 rms=0.142839 peak=0.430016
+PASS: pickup 实际 Master 混音输出非静音
+PASS: pickup 播放后音频节点总量不变
+AUDIO_CAPTURE: victory frames=7168 rms=0.121420 peak=0.231580
+PASS: victory 实际 Master 混音输出非静音
+PASS: victory 播放后音频节点总量不变
+AUDIO_CAPTURE: defeat frames=6656 rms=0.334815 peak=0.757598
+PASS: defeat 实际 Master 混音输出非静音
+PASS: defeat 播放后音频节点总量不变
+AUDIO_CAPTURE: inspect frames=7168 rms=0.151722 peak=0.767832
+PASS: inspect 实际 Master 混音输出非静音
+PASS: inspect 播放后音频节点总量不变
+AUDIO_CAPTURE: cabinet frames=6656 rms=0.113235 peak=0.569732
+PASS: cabinet 实际 Master 混音输出非静音
+PASS: cabinet 播放后音频节点总量不变
+PASS: 连续触发 200 次音效仍受固定音频池限制
+PASS: 测试结束停止全部音频
+AUDIO_TEST_RESULT: PASS failures=0
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+Metal 4.0 - Forward+ - Using Device #0: Apple - Apple M4 (Apple9)
+
+OCCLUSION dark wall center RGB=(0.011765, 0.027451, 0.05098)
+PASS unrevealed opaque wall hides a bright target across the wall
+OCCLUSION debug wall center RGB=(0.482353, 0.596079, 0.678431)
+PASS developer lighting reveals the same wall surface
+PASS developer lighting still occludes the magenta target
+OCCLUSION exposed target center RGB=(1.0, 0.0, 1.0)
+PASS hiding architecture exposes the bright magenta target at the same pixel
+PASS black wall depth, rather than target brightness or camera orientation, caused occlusion
+OCCLUSION graphical failures=0
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+Metal 4.0 - Forward+ - Using Device #0: Apple - Apple M4 (Apple9)
+
+PASS input: captured relative mouse motion rotates yaw and pitch
+PASS input: Esc pauses and releases cursor
+PASS input: pause freezes acoustic and evidence clock
+PASS input: Esc resumes and captures cursor
+PASS input: F1 toggles developer view
+PASS input: E reaches real interaction handler
+PASS input: R rebuilds scene from result screen
+INPUT failures=0
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+Metal 4.0 - Forward+ - Using Device #0: Apple - Apple M4 (Apple9)
+
+WAVE_PIXEL angle=0 inside=0.5333 outside=0.0510
+PASS radius 4.2 m reached at 0 degrees, including diagonals
+PASS radius 6.0 m remains dark at 0 degrees
+WAVE_PIXEL angle=45 inside=0.5255 outside=0.0510
+PASS radius 4.2 m reached at 45 degrees, including diagonals
+PASS radius 6.0 m remains dark at 45 degrees
+WAVE_PIXEL angle=90 inside=0.5333 outside=0.0510
+PASS radius 4.2 m reached at 90 degrees, including diagonals
+PASS radius 6.0 m remains dark at 90 degrees
+WAVE_PIXEL angle=135 inside=0.5333 outside=0.0510
+PASS radius 4.2 m reached at 135 degrees, including diagonals
+PASS radius 6.0 m remains dark at 135 degrees
+WAVE_PIXEL angle=180 inside=0.5438 outside=0.0510
+PASS radius 4.2 m reached at 180 degrees, including diagonals
+PASS radius 6.0 m remains dark at 180 degrees
+WAVE_PIXEL angle=225 inside=0.5407 outside=0.0510
+PASS radius 4.2 m reached at 225 degrees, including diagonals
+PASS radius 6.0 m remains dark at 225 degrees
+WAVE_PIXEL angle=270 inside=0.5438 outside=0.0510
+PASS radius 4.2 m reached at 270 degrees, including diagonals
+PASS radius 6.0 m remains dark at 270 degrees
+WAVE_PIXEL angle=315 inside=0.5333 outside=0.0510
+PASS radius 4.2 m reached at 315 degrees, including diagonals
+PASS radius 6.0 m remains dark at 315 degrees
+PASS saved graphical evidence v0.3-circular-front.png
+TAIL_ADVANCE reached=0.1451 unreached=0.0510 baseline=0.0510
+PASS weak outer light travels outward in time; it does not light the entire tail immediately
+TAIL_PIXEL inner=0.3595 weak=0.1908 edge=0.0667 beyond=0.0510 boundary_delta=0.0000
+PASS outer light becomes progressively weaker outside the 4 m core
+TAIL_BEYOND actual=0.0510 baseline=0.0510
+PASS a visible weak tail continues beyond the original range and reaches zero at finite distance
+PASS GPU pixels remain continuous across the strong/weak boundary
+PASS saved graphical evidence v0.3-diffuse-tail.png
+HEMISPHERE_PIXEL radius=5 low=0.5529 high=0.0510
+PASS hemisphere has reached the lower part of one continuous wall face
+PASS upper part of that same face remains dark until the hemisphere arrives
+PASS saved graphical evidence v0.3-hemisphere-wall.png
+HEMISPHERE_PIXEL radius=6.2 high=0.3529
+PASS the high point lights later as radius expands; wall height is not lit all at once
+WAVE_VISUAL_RESULT: PASS failures=0
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+Metal 4.0 - Forward+ - Using Device #0: Apple - Apple M4 (Apple9)
+
+PASS E resolves the selected locker only
+PASS saved locker-front
+PASS pause freezes entry movement and sound clock
+PASS paused E cannot leave hiding or pick up an object
+PASS real E enters and closes the hollow locker
+PASS entering never triggers core pickup
+PASS hidden movement input produces neither displacement nor footsteps
+PASS actual exterior probe cannot confirm the player inside a closed locker
+PASS saved locker-inside
+PASS E exits the locker and restores movement
+PASS E enters the table with a real short capsule and low camera
+PASS saved table-inside
+PASS saved hide-inspection
+PASS beacon makes the real monster inspect the known hiding entrance
+PASS table inspection can complete a collision-safe exit with the monster present
+PASS inspection does not directly cause failure
+PASS result restart restores ownership, pose and movement
+PASS result restart resets doors and monster hiding memory
+HIDING_INTEGRATION_RESULT: failures=0 graphical=true
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+Metal 4.0 - Forward+ - Using Device #0: Apple - Apple M4 (Apple9)
+
+PASS E: real movement reaches deep machine room with active AI
+PASS E: reachable clap then real pickup
+PASS E: active pursuer switched to beacon tracking
+PASS E: full expedition + pickup + alternate return route wins
+METRICS viewport=(1920, 1080) physics_samples=1149 elapsed_seconds=19.115598 rendered_frames=2146 capture=true last_fps=116.0 renderer=forward_plus
+PASS E: victory restart produces fresh scene
+PASS E: visible attack windup precedes failure
+PASS E: actual attack hit produces failure
+PASS E: actual defeat restart resets scene
+PLAYTHROUGH failures=0

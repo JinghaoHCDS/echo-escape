@@ -1,0 +1,22 @@
+Godot Engine v4.6.1.stable.official.14d19694e - https://godotengine.org
+Metal 4.0 - Forward+ - Using Device #0: Apple - Apple M4 (Apple9)
+
+PASS E resolves the selected locker only
+PASS saved locker-front
+PASS pause freezes entry movement and sound clock
+PASS paused E cannot leave hiding or pick up an object
+PASS real E enters and closes the hollow locker
+PASS entering never triggers core pickup
+PASS hidden movement input produces neither displacement nor footsteps
+PASS actual exterior probe cannot confirm the player inside a closed locker
+PASS saved locker-inside
+PASS E exits the locker and restores movement
+PASS E enters the table with a real short capsule and low camera
+PASS saved table-inside
+PASS saved hide-inspection
+PASS beacon makes the real monster inspect the known hiding entrance
+PASS table inspection can complete a collision-safe exit with the monster present
+PASS inspection does not directly cause failure
+PASS result restart restores ownership, pose and movement
+PASS result restart resets doors and monster hiding memory
+HIDING_INTEGRATION_RESULT: failures=0 graphical=true
