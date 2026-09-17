@@ -20,6 +20,12 @@ func _draw() -> void:
 	for cell: Vector2i in data.walkable:
 		var color := Color(0.12, 0.18, 0.21)
 		if distances.has(cell):
-			color = Color(0.2, 0.55, 0.64) if float(distances[cell]) <= radius else Color(0.23, 0.29, 0.3)
+			if float(distances[cell]) <= radius:
+				color = Color(0.2, 0.55, 0.64) if float(distances[cell]) <= float(wave["max_distance"]) else Color(0.10, 0.29, 0.36)
+			else:
+				color = Color(0.23, 0.29, 0.3)
 		draw_rect(Rect2(Vector2(cell) * SCALE, Vector2.ONE * (SCALE - 0.5)), color)
+	for spot: Dictionary in data.hiding_spots:
+		var bounds: AABB = spot["bounds"]
+		draw_rect(Rect2(Vector2(bounds.position.x, bounds.position.z) * SCALE, Vector2(bounds.size.x, bounds.size.z) * SCALE), Color(0.8, 0.61, 0.3), false, 1.0)
 	draw_circle(Vector2(player.global_position.x, player.global_position.z) * SCALE, 3.0, Color.WHITE)

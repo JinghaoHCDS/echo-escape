@@ -8,6 +8,7 @@ var player: EchoPlayer
 var monster: EchoMonster
 var sound: SoundSystem
 var objectives: EchoObjectives
+var hiding: HidingSystem
 var ui: EchoUI
 var session: Node3D
 var status: String = "intro"
@@ -29,7 +30,7 @@ func _ready() -> void:
 	ui.resume_requested.connect(start_game)
 	ui.restart_requested.connect(restart)
 	ui.setting_changed.connect(_change_setting)
-	ui.modal("intro", "回声撤离", "E C H O   E S C A P E   /   声音潜行实验\n\n黑暗中，声音给你方向，也给它方向。\n穿过声廊，深入机房。鼓掌唤醒核心，然后带它返回入口。\n\nWASD 移动 · Shift 奔跑 · 左键鼓掌 · E 交互\n低沉的三连脉冲意味着它在探测；抬起双臂时，立即侧移。")
+	ui.modal("intro", "回声撤离", "E C H O   E S C A P E   /   声音潜行实验\n\n鼓掌唤醒机房核心，再带它返回入口。声音给你方向，也给它方向。\nE 进入柜子或桌底，再按 E 离开；先切断视线再躲藏。\n柜门隔绝探测，桌底仍会被探测；信标启动后无法靠躲藏脱身。\n\nWASD 移动 · Shift 奔跑 · 左键鼓掌 · E 交互\n三连脉冲是探测，敲击是检查，抬起双臂时立即侧移。")
 	get_tree().paused = true
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
@@ -60,10 +61,17 @@ func _build_session() -> void:
 	session.add_child(sound)
 	sound.setup(data, config)
 	sound.bind_material(level.material)
+	hiding = HidingSystem.new()
+	hiding.name = "HidingSystem"
+	session.add_child(hiding)
+	hiding.setup(data, player, sound, config, level.material)
+	sound.set_hiding_system(hiding)
+	hiding.feedback.connect(func(message: String) -> void: ui.toast(message))
 	monster = EchoMonster.new()
 	monster.name = "Monster"
 	session.add_child(monster)
 	monster.setup(data, player, sound, config)
+	monster.set_hiding_system(hiding)
 	sound.register_listener("player", player)
 	sound.register_listener("monster", monster)
 	objectives = EchoObjectives.new()
@@ -71,7 +79,7 @@ func _build_session() -> void:
 	objectives.setup(data, player, sound, config)
 	player.footstep.connect(func(kind: String, at: Vector3) -> void: sound.emit_sound(kind, "player", at))
 	player.clap_requested.connect(clap)
-	player.interact_requested.connect(func() -> void: objectives.interact())
+	player.interact_requested.connect(interact)
 	monster.player_hit.connect(func(reason: String) -> void: finish(false, reason))
 	objectives.activated.connect(func() -> void:
 		ui.toast("回声已唤醒核心 · 靠近并按 E 取出")
@@ -103,8 +111,34 @@ func start_game() -> void:
 
 func clap() -> void:
 	if status == "playing" and clap_remaining <= 0.0:
-		sound.emit_sound("clap", "player", player.global_position)
+		sound.emit_sound("clap", "player", player.acoustic_position())
 		clap_remaining = float(config["clap_cooldown"])
+
+func _interaction_target() -> String:
+	if not hiding.current_spot_id.is_empty() or hiding.is_transitioning():
+		return "hiding"
+	var furniture: Dictionary = hiding.candidate()
+	var core: Dictionary = objectives.interaction_candidate()
+	if not core.is_empty() and (furniture.is_empty() or float(core["distance"]) <= float(furniture["distance"])):
+		return "core"
+	return "hiding" if not furniture.is_empty() else ""
+
+func interact() -> void:
+	if status != "playing":
+		return
+	match _interaction_target():
+		"hiding":
+			hiding.interact()
+		"core":
+			objectives.interact()
+
+func _interaction_prompt() -> String:
+	match _interaction_target():
+		"hiding":
+			return hiding.prompt()
+		"core":
+			return "[ E ]  取出信标核心"
+	return objectives.prompt() if not objectives.can_pick_up() else "看向核心，按 E 取出"
 
 func _on_pickup() -> void:
 	monster.set_alarm(true)
@@ -117,9 +151,9 @@ func _physics_process(delta: float) -> void:
 	run_time += delta
 	clap_remaining = maxf(0.0, clap_remaining - delta)
 	level.update_view(player.global_position, sound.clock, debug_enabled)
-	ui.update_hud(data.room_name(player.global_position), clap_remaining, float(config["clap_cooldown"]), objectives.prompt(), objectives.has_item)
+	ui.update_hud(data.room_name(player.global_position), clap_remaining, float(config["clap_cooldown"]), _interaction_prompt(), objectives.has_item)
 	if debug_enabled:
-		ui.debug_label.text = "开发照明 / 规则不变   |   %d FPS\n状态 %s · 有效证据 %.1fs 前\n最后位置 %s\n发现/丢失：%s\n攻击：%s\n声波 %d / %d · 节点 %d\n%s\n网格：灰=通行 / 青=最新波到达 / 白=玩家" % [Engine.get_frames_per_second(), monster.state, maxf(0.0, sound.clock - monster.last_evidence_time), str(monster.last_known_position), monster.evidence_reason, monster.attack_reason, sound.active_waves.size(), int(config["max_waves"]), get_tree().get_node_count(), sound.last_debug]
+		ui.debug_label.text = "开发照明 / 规则不变   |   %d FPS\n状态 %s · 有效证据 %.1fs 前\n最后位置 %s\n发现/丢失：%s\n攻击：%s\n躲藏 %s · 鼓掌作用 %.0fm / 显形 %.0fm\n声波 %d / %d · 节点 %d\n%s\n网格：青=已到达 / 暗青=弱光 / 框=家具 / 白=玩家" % [Engine.get_frames_per_second(), monster.state, maxf(0.0, sound.clock - monster.last_evidence_time), str(monster.last_known_position), monster.evidence_reason, monster.attack_reason, "无" if hiding.current_spot_id.is_empty() else hiding.current_spot_id, float(config["clap_radius"]), float(config["clap_radius"]) * float(config["visual_range_multiplier"]), sound.active_waves.size(), int(config["max_waves"]), get_tree().get_node_count(), sound.last_debug]
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("debug"):
@@ -134,7 +168,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			status = "paused"
 			get_tree().paused = true
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-			ui.modal("pause", "静默 / 暂停", "声音与追踪已暂停。\n\n鼓掌照亮远处，也会暴露发声时的位置。\n绕过实体墙可切断视线；探测波仍能沿门洞抵达。\n携带核心后，信标持续暴露位置。")
+			ui.modal("pause", "静默 / 暂停", "声音、追踪与躲藏动作已暂停。\n\n强回声之外的弱光只帮助辨路，不扩大听觉范围。\n先切断视线，再按 E 躲进柜子；桌底仍会被探测。\n听到敲击检查时及时离开；信标会持续暴露位置。")
 		elif status == "paused":
 			start_game()
 	if event.is_action_pressed("restart") and status in ["won", "lost"]:

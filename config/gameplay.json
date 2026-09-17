@@ -41,5 +41,14 @@
   "max_field_cache": 16,
   "visual_range_multiplier": 1.5,
   "wave_core_transition_start": 0.8,
-  "wave_outer_intensity": 0.18
+  "wave_outer_intensity": 0.18,
+  "hide_inspect_duration": 1.2,
+  "hide_interact_distance": 2.2,
+  "hide_view_dot": 0.58,
+  "hide_move_speed": 3.2,
+  "hide_door_duration": 0.28,
+  "hide_crouch_height": 0.78,
+  "hide_crouch_eye_height": 0.65,
+  "hide_standing_height": 1.75,
+  "hide_standing_eye_height": 1.6
 }

@@ -40,7 +40,7 @@ func _ready() -> void:
 	_label("E C H O  /  E S C A P E", Vector2(56, 36), 22, Color(0.48, 0.75, 0.81))
 	room_label = _label("01 / 入口", Vector2(56, 78), 35)
 	objective_label = _label("深入机房，用鼓掌寻找信标核心", Vector2(56, 132), 25)
-	_label("左键 鼓掌   /   WASD 移动   /   Shift 奔跑   /   E 交互", Vector2(56, 981), 22, Color(0.57, 0.67, 0.7))
+	_label("左键 鼓掌   /   WASD 移动   /   Shift 奔跑   /   E 交互或进出躲藏", Vector2(56, 981), 22, Color(0.57, 0.67, 0.7))
 	_label("Esc 暂停     F1 调试", Vector2(1510, 1008), 20, Color(0.48, 0.59, 0.63))
 	cooldown_label = _label("回声就绪", Vector2(56, 893), 25)
 	cooldown_bar = ProgressBar.new()

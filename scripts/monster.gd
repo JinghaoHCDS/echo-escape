@@ -10,6 +10,7 @@ const PATROL: String = "PATROL"
 const INVESTIGATE: String = "INVESTIGATE"
 const CHASE: String = "CHASE"
 const SEARCH: String = "SEARCH"
+const INSPECT_HIDE: String = "INSPECT_HIDE"
 const ATTACK_WINDUP: String = "ATTACK_WINDUP"
 const ATTACK_STRIKE: String = "ATTACK_STRIKE"
 const ATTACK_RECOVERY: String = "ATTACK_RECOVERY"
@@ -20,6 +21,16 @@ var last_evidence_time: float = -1000.0
 var evidence_reason: String = "尚未获得玩家位置证据"
 var attack_reason: String = "尚未攻击"
 var alarm_active: bool = false
+# This is evidence memory, not an alias for the player's current hiding state.
+var known_hiding_spot_id: String = ""
+var _hiding: Node
+var _hide_approach_snapshot: Vector3 = Vector3.ZERO
+var _hide_focus_snapshot: Vector3 = Vector3.ZERO
+var _hide_bounds_snapshot: AABB
+var _has_hide_bounds: bool = false
+var _hide_evidence_time: float = -1000.0
+var _hide_inspected: bool = false
+var _inspection_elapsed: float = -1.0
 
 var _data: LevelData
 var _player: CharacterBody3D
@@ -67,6 +78,23 @@ func setup(data: LevelData, player: CharacterBody3D, sound: SoundSystem, config:
 	_update_visuals(0.0)
 
 
+func set_hiding_system(hiding: Node) -> void:
+	if is_instance_valid(_hiding) and _hiding.is_connected("entering", _on_hiding_entering):
+		_hiding.disconnect("entering", _on_hiding_entering)
+	_hiding = hiding
+	if is_instance_valid(_hiding):
+		_hiding.connect("entering", _on_hiding_entering)
+
+
+func _on_hiding_entering(spot_id: String, entry_position: Vector3) -> void:
+	# Emitted before relocation/crouching: test the actual exterior player pose.
+	# Hearing about an interaction alone never grants the monster this memory.
+	if not _ready_to_run or not _player_is_visible():
+		return
+	_register_evidence(entry_position, "目击：看到玩家进入躲藏点；记住入口并前往检查", true)
+	_remember_hiding(spot_id, true)
+
+
 func on_sound_arrived(event: Dictionary, listener_id: String) -> void:
 	if not _ready_to_run:
 		return
@@ -76,18 +104,21 @@ func on_sound_arrived(event: Dictionary, listener_id: String) -> void:
 		reveal(_number("monster_reveal_duration", 0.7))
 		# The monster hears only player-originated evidence, never its own ping.
 		if source == "player":
+			# A delayed pre-entry footstep must not overwrite newer observed entry.
+			if not known_hiding_spot_id.is_empty() and float(event.get("time", _now())) < _hide_evidence_time:
+				return
 			var origin: Vector3 = event.get("position", Vector3.ZERO)
 			_register_evidence(origin, "听觉：%s 声到达；目标为发声瞬间的位置" % kind, false)
 	elif listener_id == "player" and source == "monster" and kind == "probe":
 		# This callback is delivered only after the reachable wave hits the
 		# player's collision footprint. Reading the hit position is now valid.
-		_register_evidence(_player.global_position, "探测：声波沿通路实际命中玩家", true)
+		_register_confirmed_player("探测：声波沿通路实际命中玩家")
 
 
 func set_alarm(active: bool) -> void:
 	alarm_active = active
 	if active and _ready_to_run:
-		_register_evidence(_player.global_position, "信标：警报阶段持续位置证据", true)
+		_register_confirmed_player("信标：警报阶段持续位置证据")
 
 
 func set_debug(active: bool) -> void:
@@ -119,9 +150,9 @@ func _physics_process(delta: float) -> void:
 	# failed test never updates last_known_position or the navigation target.
 	_visual_contact = _player_is_visible()
 	if alarm_active:
-		_register_evidence(_player.global_position, "信标：警报阶段持续位置证据", true)
+		_register_confirmed_player("信标：警报阶段持续位置证据")
 	elif _visual_contact:
-		_register_evidence(_player.global_position, "视觉：距离、视角与无遮挡射线均通过", true)
+		_register_confirmed_player("视觉：距离、视角与无遮挡射线均通过")
 
 	velocity.x = 0.0
 	velocity.z = 0.0
@@ -129,8 +160,9 @@ func _physics_process(delta: float) -> void:
 		PATROL:
 			_update_patrol(delta)
 		INVESTIGATE:
-			_move_toward_target(last_known_position, _number("investigate_speed", 2.4), delta)
-			if _flat_distance(global_position, last_known_position) < 0.55:
+			var investigation_target: Vector3 = _data.navigation_target(last_known_position)
+			_move_toward_target(investigation_target, _number("investigate_speed", 2.4), delta)
+			if _flat_distance(global_position, investigation_target) < 0.55:
 				_enter_state(SEARCH)
 		CHASE:
 			if not alarm_active and _now() - last_evidence_time >= _number("evidence_timeout", 5.0):
@@ -139,9 +171,11 @@ func _physics_process(delta: float) -> void:
 			elif _can_start_attack():
 				_begin_attack()
 			else:
-				_move_toward_target(last_known_position, _number("monster_speed", 3.6), delta)
+				_move_toward_target(_chase_target(), _number("monster_speed", 3.6), delta)
 		SEARCH:
 			_update_search(delta)
+		INSPECT_HIDE:
+			_update_inspection(delta)
 		ATTACK_WINDUP:
 			_update_windup(delta)
 		ATTACK_STRIKE:
@@ -150,7 +184,7 @@ func _physics_process(delta: float) -> void:
 		ATTACK_RECOVERY:
 			if _state_time >= _number("attack_recovery", 1.0):
 				if alarm_active or (_confirmed and _now() - last_evidence_time < _number("evidence_timeout", 5.0)):
-					_enter_state(CHASE)
+					_enter_state(INSPECT_HIDE if not known_hiding_spot_id.is_empty() and not _hide_inspected else CHASE)
 				else:
 					_enter_state(SEARCH)
 
@@ -168,18 +202,107 @@ func _physics_process(delta: float) -> void:
 
 
 func _register_evidence(at: Vector3, reason: String, confirms: bool) -> void:
+	# A new sound can disprove the old furniture hypothesis without querying the
+	# player's live coordinates or current hide ID. Never cancel an attack.
+	if not confirms and _has_hide_bounds and not _hide_bounds_snapshot.grow(0.15).has_point(at):
+		_clear_hiding_memory()
+		if state == INSPECT_HIDE:
+			_enter_state(CHASE if _confirmed else INVESTIGATE)
 	last_known_position = at
 	last_evidence_time = _now()
 	evidence_reason = reason
 	if confirms:
 		_confirmed = true
-	if _is_attacking():
+	if _is_attacking() or state == INSPECT_HIDE:
 		return
 	if confirms or state == CHASE:
 		_enter_state(CHASE)
 	else:
 		_confirmed = false
 		_enter_state(INVESTIGATE)
+
+
+func _register_confirmed_player(reason: String) -> void:
+	# Called only after a successful sight/probe test, or the explicit beacon.
+	var spot_id: String = _player_hiding_id()
+	if spot_id.is_empty() and not known_hiding_spot_id.is_empty():
+		_clear_hiding_memory()
+		if state == INSPECT_HIDE:
+			_enter_state(CHASE)
+	_register_evidence(_player.global_position, reason, true)
+	if not spot_id.is_empty():
+		_remember_hiding(spot_id)
+
+
+func _remember_hiding(spot_id: String, new_entry: bool = false) -> void:
+	if not is_instance_valid(_hiding):
+		return
+	var spot: Dictionary = _hiding.call("get_spot", spot_id)
+	if spot.is_empty():
+		return
+	_hide_evidence_time = _now()
+	if spot_id != known_hiding_spot_id or new_entry:
+		known_hiding_spot_id = spot_id
+		_hide_approach_snapshot = _hiding.call("inspection_position", spot_id)
+		_hide_focus_snapshot = spot.get("inside", last_known_position)
+		_has_hide_bounds = spot.has("bounds")
+		if _has_hide_bounds:
+			_hide_bounds_snapshot = spot["bounds"]
+		_hide_inspected = false
+		_inspection_elapsed = -1.0
+	if not _is_attacking() and not _hide_inspected:
+		_enter_state(INSPECT_HIDE)
+
+
+func _player_hiding_id() -> String:
+	if not is_instance_valid(_hiding):
+		return ""
+	return str(_player.get("hiding_spot_id"))
+
+
+func _clear_hiding_memory() -> void:
+	known_hiding_spot_id = ""
+	_has_hide_bounds = false
+	_hide_evidence_time = -1000.0
+	_hide_inspected = false
+	_inspection_elapsed = -1.0
+
+
+func _chase_target() -> Vector3:
+	return last_known_position if known_hiding_spot_id.is_empty() else _hide_approach_snapshot
+
+
+func _update_inspection(delta: float) -> void:
+	if not is_instance_valid(_hiding) or known_hiding_spot_id.is_empty():
+		_enter_state(SEARCH)
+		return
+	if _inspection_elapsed < 0.0:
+		if not alarm_active and _now() - last_evidence_time >= _number("evidence_timeout", 5.0):
+			evidence_reason = "丢失：五秒没有新证据；在记住的躲藏入口附近搜索"
+			_enter_state(SEARCH)
+			return
+		if _flat_distance(global_position, _hide_approach_snapshot) > 0.12:
+			_move_toward_target(_hide_approach_snapshot, _number("monster_speed", 3.6), delta)
+			return
+		_inspection_elapsed = 0.0
+		_sound.play_cue("inspect", global_position)
+		reveal(_number("hide_inspect_duration", 1.2) + 0.35)
+		attack_reason = "检查：敲击并伸手，完成检查后仍需正常攻击前摇"
+	var direction: Vector3 = _hide_focus_snapshot - global_position
+	direction.y = 0.0
+	if direction.length_squared() > 0.001:
+		_turn_toward(direction.normalized(), delta, 6.0)
+	_inspection_elapsed += delta
+	if _inspection_elapsed < _number("hide_inspect_duration", 1.2):
+		return
+	if not bool(_hiding.call("inspect", known_hiding_spot_id)):
+		return
+	_hide_inspected = true
+	attack_reason = "检查完成：打开柜门或迫使桌底玩家安全退出；尚未判定攻击"
+	if alarm_active or _now() - last_evidence_time < _number("evidence_timeout", 5.0):
+		_enter_state(CHASE)
+	else:
+		_enter_state(SEARCH)
 
 
 func _enter_state(next_state: String) -> void:
@@ -195,6 +318,9 @@ func _enter_state(next_state: String) -> void:
 		_search_index = 0
 	elif next_state == PATROL:
 		_confirmed = false
+		_clear_hiding_memory()
+	elif next_state == INSPECT_HIDE:
+		_inspection_elapsed = -1.0
 	state_changed.emit(state)
 
 
@@ -214,15 +340,17 @@ func _update_search(delta: float) -> void:
 		_enter_state(PATROL)
 		return
 	var offsets: Array[Vector3] = [Vector3.ZERO, Vector3(2.0, 0.0, 0.0), Vector3(0.0, 0.0, 2.0), Vector3(-2.0, 0.0, 0.0), Vector3(0.0, 0.0, -2.0)]
-	var goal: Vector3 = last_known_position + offsets[_search_index % offsets.size()]
+	var search_center: Vector3 = _chase_target()
+	var goal: Vector3 = search_center + offsets[_search_index % offsets.size()]
 	if _flat_distance(global_position, goal) < 0.65 or (_state_time > float(_search_index + 1)):
 		_search_index += 1
-		goal = last_known_position + offsets[_search_index % offsets.size()]
+		goal = search_center + offsets[_search_index % offsets.size()]
 	_move_toward_target(goal, _number("patrol_speed", 1.6), delta)
 
 
 func _move_toward_target(target: Vector3, speed: float, delta: float) -> void:
-	if _flat_distance(global_position, target) < 0.18:
+	target = _data.navigation_target(target)
+	if _flat_distance(global_position, target) < 0.08:
 		return
 	var route_needs_update: bool = _path.is_empty() or _path_index >= _path.size() or _flat_distance(_path_goal, target) > 0.7
 	if _repath_timer <= 0.0 and route_needs_update:
@@ -257,8 +385,19 @@ func _move_toward_target(target: Vector3, speed: float, delta: float) -> void:
 	_turn_toward(direction, delta, 8.0)
 
 
+func _sight_target() -> Vector3:
+	return _player.call("sight_target") if _player.has_method("sight_target") else _player.global_position + Vector3.UP
+
+
+func _attack_target() -> Vector3:
+	return _player.call("attack_target") if _player.has_method("attack_target") else _player.global_position + Vector3.UP
+
+
 func _player_is_visible() -> bool:
-	var difference: Vector3 = _player.global_position - global_position
+	var target: Vector3 = _sight_target()
+	if (target - (global_position + Vector3.UP * 1.45)).length() > _number("sight_range", 8.0):
+		return false
+	var difference: Vector3 = target - global_position
 	difference.y = 0.0
 	var distance: float = difference.length()
 	if distance > _number("sight_range", 8.0):
@@ -269,22 +408,24 @@ func _player_is_visible() -> bool:
 		var cosine: float = forward.normalized().dot(difference / distance)
 		if cosine < cos(deg_to_rad(_number("sight_fov_degrees", 80.0) * 0.5)):
 			return false
-	return _clear_wall_ray(global_position + Vector3.UP * 1.45, _player.global_position + Vector3.UP * 1.0)
+	return _clear_wall_ray(global_position + Vector3.UP * 1.45, target)
 
 
 func _can_start_attack() -> bool:
 	# Even during the beacon phase there must be physical proximity, a forward
 	# target and an unobstructed ray. Contact itself is never a loss condition.
-	var difference: Vector3 = _player.global_position - global_position
+	var target: Vector3 = _attack_target()
+	var distance: float = target.distance_to(global_position + Vector3.UP)
+	var difference: Vector3 = target - global_position
 	difference.y = 0.0
-	var distance: float = difference.length()
+	var horizontal_distance: float = difference.length()
 	if distance > _number("attack_start_range", _number("attack_range", 1.65) + 0.12):
 		return false
 	if not _visual_contact and not alarm_active:
 		return false
-	if distance > 0.001 and (-global_transform.basis.z).dot(difference / distance) < cos(deg_to_rad(_number("sight_fov_degrees", 80.0) * 0.5)):
+	if horizontal_distance > 0.001 and (-global_transform.basis.z).dot(difference / horizontal_distance) < cos(deg_to_rad(_number("sight_fov_degrees", 80.0) * 0.5)):
 		return false
-	return _clear_wall_ray(global_position + Vector3.UP, _player.global_position + Vector3.UP)
+	return _clear_wall_ray(global_position + Vector3.UP, target)
 
 
 func _begin_attack() -> void:
@@ -319,10 +460,12 @@ func _update_windup(delta: float) -> void:
 
 
 func _resolve_attack() -> void:
-	var difference: Vector3 = _player.global_position - global_position
+	var target: Vector3 = _attack_target()
+	var distance: float = target.distance_to(global_position + Vector3.UP)
+	var difference: Vector3 = target - global_position
 	difference.y = 0.0
-	var distance: float = difference.length()
-	var cosine: float = 1.0 if distance < 0.001 else _attack_direction.dot(difference / distance)
+	var horizontal_distance: float = difference.length()
+	var cosine: float = 1.0 if horizontal_distance < 0.001 else _attack_direction.dot(difference / horizontal_distance)
 	var angle: float = rad_to_deg(acos(clampf(cosine, -1.0, 1.0)))
 	if distance > _number("attack_range", 1.65):
 		attack_reason = "攻击落空：距离 %.2f m 超出 %.2f m" % [distance, _number("attack_range", 1.65)]
@@ -330,7 +473,7 @@ func _resolve_attack() -> void:
 	if angle > _number("attack_half_angle_degrees", 36.0):
 		attack_reason = "攻击落空：玩家偏离锁定方向 %.1f°" % angle
 		return
-	if not _clear_wall_ray(global_position + Vector3.UP, _player.global_position + Vector3.UP):
+	if not _clear_wall_ray(global_position + Vector3.UP, target):
 		attack_reason = "攻击落空：实体墙阻挡命中射线"
 		return
 	attack_reason = "攻击命中：距离 %.2f m，偏角 %.1f°，无遮挡；方向在前摇末段已锁定" % [distance, angle]
@@ -442,7 +585,7 @@ func _mesh(mesh: Mesh, at: Vector3, material: Material, parent: Node3D) -> MeshI
 
 func _update_visuals(_delta: float) -> void:
 	var illumination: float = 1.0 if _debug else clampf(_reveal_remaining / 0.22, 0.0, 1.0)
-	var danger: bool = state == CHASE or _is_attacking() or alarm_active
+	var danger: bool = state == CHASE or state == INSPECT_HIDE or _is_attacking() or alarm_active
 	var edge_color: Color = Color(1.0, 0.18, 0.065) if danger else Color(0.45, 0.74, 0.81)
 	_body_material.albedo_color = Color(0.002, 0.003, 0.005).lerp(Color(0.13, 0.19, 0.22), illumination)
 	_body_material.emission = Color(0.04, 0.085, 0.105) * illumination
@@ -454,7 +597,11 @@ func _update_visuals(_delta: float) -> void:
 	_face_material.emission = edge_color * illumination * 1.5
 	var arm_angle: float = 0.0
 	var body_tilt: float = 0.0
-	if state == ATTACK_WINDUP:
+	if state == INSPECT_HIDE and _inspection_elapsed >= 0.0:
+		var progress: float = clampf(_inspection_elapsed / _number("hide_inspect_duration", 1.2), 0.0, 1.0)
+		arm_angle = 0.9 + sin(progress * TAU * 2.0) * 0.2
+		body_tilt = -0.12
+	elif state == ATTACK_WINDUP:
 		var progress: float = clampf(_state_time / _number("attack_windup", 0.65), 0.0, 1.0)
 		arm_angle = 2.15 * progress
 		body_tilt = 0.10 * progress
@@ -470,7 +617,7 @@ func _update_visuals(_delta: float) -> void:
 		var moving: bool = Vector2(velocity.x, velocity.z).length() > 0.1
 		arm_angle = sin(_now() * 5.0) * 0.18 if moving else 0.0
 	_left_arm.rotation.x = arm_angle
-	_right_arm.rotation.x = arm_angle if _is_attacking() else -arm_angle
+	_right_arm.rotation.x = arm_angle if _is_attacking() or state == INSPECT_HIDE else -arm_angle
 	_visual_root.rotation.x = body_tilt
 	var pulse: float = sin((0.48 - _probe_flash) * 25.0) * 0.06 if _probe_flash > 0.0 else 0.0
 	_head.scale = Vector3.ONE * (1.0 + pulse)

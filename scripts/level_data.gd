@@ -12,8 +12,10 @@ const NEIGHBORS: Array[Vector2i] = [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, 
 var walkable: Dictionary = {}
 var solid_heights: Dictionary = {}
 var room_names: Dictionary = {}
-# Optional local sound regions; interactive furniture is assembled separately.
+# Furniture is hollow physical geometry, independent of architectural occupancy.
+# Navigation excludes footprints; sound uses locker bounds plus their door portal.
 var hiding_spots: Array[Dictionary] = []
+var navigation_blocked: Dictionary = {}
 var spawn_position: Vector3 = Vector3(6.5, 0.0, 25.5)
 var monster_spawn: Vector3 = Vector3(24.5, 0.0, 18.5)
 var item_position: Vector3 = Vector3(32.5, 0.0, 3.5)
@@ -43,6 +45,39 @@ func _init() -> void:
 	_block(25, 21, 26, 22, 1.2)
 	_block(13, 4, 15, 5, 2.45)
 	_block(28, 4, 30, 5, 2.45)
+	_add_hiding_spot("gallery_locker", "locker", Vector3(2.75, 0.0, 18.1), Vector3(1.45, 2.3, 1.3))
+	_add_hiding_spot("archive_locker", "locker", Vector3(18.2, 0.0, 2.7), Vector3(1.45, 2.3, 1.3))
+	_add_hiding_spot("atrium_table", "table", Vector3(17.5, 0.0, 21.5), Vector3(2.4, 1.25, 1.6))
+
+func _add_hiding_spot(id: String, kind: String, center: Vector3, size: Vector3) -> void:
+	var front: float = center.z + size.z * 0.5
+	var entry: Vector3 = Vector3(center.x, 0.02, front + 0.68)
+	var bounds := AABB(Vector3(center.x - size.x * 0.5, 0.0, center.z - size.z * 0.5), size)
+	var exits: Array[Vector3] = [entry, entry + Vector3(0.48, 0.0, 0.35), entry + Vector3(-0.48, 0.0, 0.35)]
+	hiding_spots.append({
+		"id": id, "kind": kind, "position": center, "size": size,
+		"inside": center + Vector3.UP * 0.02, "entry": entry,
+		"approach": Vector3(center.x + (0.85 if kind == "locker" else 1.25), 0.0, front + (0.60 if kind == "locker" else 0.75)), "exits": exits,
+		"bounds": bounds, "portal": Vector3(center.x, 1.0, front + 0.035),
+	})
+	for z: int in range(floori(bounds.position.z), ceili(bounds.end.z)):
+		for x: int in range(floori(bounds.position.x), ceili(bounds.end.x)):
+			navigation_blocked[Vector2i(x, z)] = true
+
+func is_navigation_open(cell: Vector2i) -> bool:
+	return is_open(cell) and not navigation_blocked.has(cell)
+
+func navigation_target(position: Vector3) -> Vector3:
+	# A sound snapshot inside hollow furniture remains evidence of that exact
+	# point, but a standing actor approaches the furniture's reachable entrance.
+	var cell: Vector2i = world_to_cell(position)
+	if not navigation_blocked.has(cell):
+		return position
+	for spot: Dictionary in hiding_spots:
+		var bounds: AABB = spot["bounds"]
+		if cell.x >= floori(bounds.position.x) and cell.x < ceili(bounds.end.x) and cell.y >= floori(bounds.position.z) and cell.y < ceili(bounds.end.z):
+			return Vector3(spot["approach"])
+	return position
 
 func _carve(x0: int, z0: int, x1: int, z1: int, title: String, overwrite_name: bool = true) -> void:
 	for z: int in range(z0, z1 + 1):
@@ -100,10 +135,11 @@ func distances_from(position: Vector3, max_distance: float = 1000.0) -> Dictiona
 	return result
 
 func find_path(from: Vector3, to: Vector3) -> Array[Vector3]:
+	to = navigation_target(to)
 	var start: Vector2i = world_to_cell(from)
 	var goal: Vector2i = world_to_cell(to)
 	var result: Array[Vector3] = []
-	if not is_open(start) or not is_open(goal):
+	if not is_navigation_open(start) or not is_navigation_open(goal):
 		return result
 	if start == goal:
 		result.append(Vector3(to.x, 0.0, to.z))
@@ -116,7 +152,7 @@ func find_path(from: Vector3, to: Vector3) -> Array[Vector3]:
 		cursor += 1
 		for direction: Vector2i in NEIGHBORS:
 			var adjacent: Vector2i = cell + direction
-			if is_open(adjacent) and not previous.has(adjacent):
+			if is_navigation_open(adjacent) and not previous.has(adjacent):
 				previous[adjacent] = cell
 				frontier.append(adjacent)
 	if not previous.has(goal):

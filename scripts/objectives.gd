@@ -93,6 +93,14 @@ func interact() -> bool:
 	picked_up.emit()
 	return true
 
+func interaction_candidate() -> Dictionary:
+	if not can_pick_up():
+		return {}
+	var direction: Vector3 = item.global_position - player.camera.global_position
+	if direction.length() > 0.001 and (-player.camera.global_transform.basis.z).dot(direction.normalized()) < float(config.get("hide_view_dot", 0.58)):
+		return {}
+	return {"distance": direction.length()}
+
 func prompt() -> String:
 	if can_pick_up():
 		return "[ E ]  取出信标核心"
