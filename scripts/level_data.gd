@@ -12,6 +12,8 @@ const NEIGHBORS: Array[Vector2i] = [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, 
 var walkable: Dictionary = {}
 var solid_heights: Dictionary = {}
 var room_names: Dictionary = {}
+# Optional local sound regions; interactive furniture is assembled separately.
+var hiding_spots: Array[Dictionary] = []
 var spawn_position: Vector3 = Vector3(6.5, 0.0, 25.5)
 var monster_spawn: Vector3 = Vector3(24.5, 0.0, 18.5)
 var item_position: Vector3 = Vector3(32.5, 0.0, 3.5)

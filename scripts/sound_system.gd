@@ -15,6 +15,8 @@ const CUES: Dictionary = {
 	"pickup": preload("res://assets/audio/pickup.wav"),
 	"victory": preload("res://assets/audio/victory.wav"),
 	"defeat": preload("res://assets/audio/defeat.wav"),
+	"inspect": preload("res://assets/audio/inspect.wav"),
+	"cabinet": preload("res://assets/audio/cabinet.wav"),
 }
 
 var active_waves: Array[Dictionary] = []
@@ -27,6 +29,11 @@ const SHADER_WAVES: int = 24
 var _materials: Array[ShaderMaterial] = []
 var _wave_origins := PackedVector4Array()
 var _wave_parameters := PackedVector4Array()
+var _wave_regions := PackedVector4Array()
+var _wave_portals := PackedVector4Array()
+var _regions: Array[Dictionary] = []
+var _hiding: Node
+const MAX_REGIONS: int = 4
 var _field_resolution: int = 4
 var _field_cache: Dictionary = {}
 var _cache_order: Array[String] = []
@@ -48,6 +55,9 @@ var _playback_volume: float = 0.8
 func setup(data: LevelData, config: Dictionary) -> void:
 	_data = data
 	_config = config
+	for spot: Dictionary in data.hiding_spots:
+		if String(spot["kind"]) == "locker" and _regions.size() < MAX_REGIONS:
+			_regions.append(spot)
 	_field_resolution = maxi(2, int(config.get("acoustic_field_resolution", 4)))
 	acoustic_field = AcousticField.new()
 	acoustic_field.setup(data)
@@ -59,6 +69,8 @@ func setup(data: LevelData, config: Dictionary) -> void:
 		layers.append(blank)
 		_wave_origins.append(Vector4.ZERO)
 		_wave_parameters.append(Vector4.ZERO)
+		_wave_regions.append(Vector4.ZERO)
+		_wave_portals.append(Vector4(-1.0, -1.0, -1.0, -1.0))
 	distance_texture = Texture2DArray.new()
 	distance_texture.create_from_images(layers)
 	_image = Image.create(LevelData.WIDTH, LevelData.HEIGHT, false, Image.FORMAT_RGBAF)
@@ -76,6 +88,11 @@ func setup(data: LevelData, config: Dictionary) -> void:
 		voice.set_meta("serial", -1)
 		add_child(voice)
 		_voices.append(voice)
+
+
+func set_hiding_system(hiding: Node) -> void:
+	_hiding = hiding
+	_sync_materials()
 
 
 func register_listener(id: String, node: Node3D) -> void:
@@ -98,7 +115,23 @@ func bind_material(material: ShaderMaterial) -> void:
 		_materials.append(material)
 	material.set_shader_parameter("wave_distances", distance_texture)
 	material.set_shader_parameter("field_resolution", float(_field_resolution))
-	material.set_shader_parameter("wave_front_width", float(_config.get("wave_front_width", 1.1)))
+	material.set_shader_parameter("wave_front_width", float(_config.get("wave_front_width", 1.5)))
+	material.set_shader_parameter("wave_core_transition_start", float(_config.get("wave_core_transition_start", 0.8)))
+	material.set_shader_parameter("wave_outer_intensity", float(_config.get("wave_outer_intensity", 0.18)))
+	var bounds := PackedVector4Array()
+	var portals := PackedVector4Array()
+	for index: int in range(MAX_REGIONS):
+		if index < _regions.size():
+			var box: AABB = _regions[index]["bounds"]
+			var portal: Vector3 = _regions[index]["portal"]
+			bounds.append(Vector4(box.position.x, box.position.z, box.end.x, box.end.z))
+			portals.append(Vector4(portal.x, portal.z, box.end.y, 1.0))
+		else:
+			bounds.append(Vector4.ZERO)
+			portals.append(Vector4.ZERO)
+	material.set_shader_parameter("acoustic_region_count", _regions.size())
+	material.set_shader_parameter("acoustic_region_bounds", bounds)
+	material.set_shader_parameter("acoustic_region_portals", portals)
 	_sync_materials()
 
 
@@ -106,6 +139,8 @@ func _sync_materials() -> void:
 	for material: ShaderMaterial in _materials:
 		material.set_shader_parameter("wave_origin_time", _wave_origins)
 		material.set_shader_parameter("wave_parameters", _wave_parameters)
+		material.set_shader_parameter("wave_region_parameters", _wave_regions)
+		material.set_shader_parameter("wave_portal_distances", _wave_portals)
 
 
 func _field_for(position: Vector3, radius: float) -> Dictionary:
@@ -115,7 +150,7 @@ func _field_for(position: Vector3, radius: float) -> Dictionary:
 		_cache_order.append(key)
 		return _field_cache[key]
 	# Extra coverage keeps filtering smooth at the wave's outer radius. Only
-	# event_distance <= max_distance can ever reveal or deliver evidence.
+	# gameplay listeners retain max_distance; the weak tail uses visual_max_distance.
 	var field: Dictionary = acoustic_field.build_wave(position, radius + 1.0)
 	var image: Image = acoustic_field.build_distance_image(field, _field_resolution)
 	if image.get_format() != Image.FORMAT_RF:
@@ -132,13 +167,26 @@ func emit_sound(kind: String, source: String, position: Vector3) -> Dictionary:
 	if _data == null:
 		return {}
 	var radius: float = float(_config.get(kind + "_radius", 4.0))
-	var cached: Dictionary = _field_for(position, radius)
+	var visual_radius: float = radius * maxf(1.0, float(_config.get("visual_range_multiplier", 1.5)))
+	var source_region: int = _region_at(position)
+	var field_origin: Vector3 = position
+	var source_prefix: float = 0.0
+	if source_region >= 0:
+		field_origin = _regions[source_region]["portal"]
+		source_prefix = Vector2(position.x, position.z).distance_to(Vector2(field_origin.x, field_origin.z))
+	var cached: Dictionary = _field_for(field_origin, maxf(0.0, visual_radius - source_prefix))
+	var portal_paths := PackedFloat32Array()
+	for spot: Dictionary in _regions:
+		portal_paths.append(acoustic_field.distance_at(cached["field"], spot["portal"]) + source_prefix)
 	var event: Dictionary = {
 		"id": _next_id, "source": source, "position": position, "time": clock,
 		"kind": kind, "intensity": float(_config.get(kind + "_intensity", 1.0)),
-		"max_distance": radius, "reveal_duration": float(_config.get("reveal_duration", 2.0)),
+		"max_distance": radius, "visual_max_distance": visual_radius, "reveal_duration": float(_config.get("reveal_duration", 2.0)),
 		"field": cached["field"], "distance_image": cached["image"],
 		"heard": {}, "revealed": {}, "previous_radius": -0.001,
+		"source_region": source_region, "source_prefix": source_prefix,
+		"exterior_enabled": source_region < 0, "portal_checked": {}, "portal_path_distances": portal_paths,
+		"portal_distances": Vector4(-1.0, -1.0, -1.0, -1.0),
 	}
 	var capacity: int = clampi(int(_config.get("max_waves", 24)), 1, SHADER_WAVES)
 	while active_waves.size() >= capacity:
@@ -150,14 +198,7 @@ func emit_sound(kind: String, source: String, position: Vector3) -> Dictionary:
 			slot = index
 			break
 	event["slot"] = slot
-	# This coarse dictionary is solely the F1 topology view and legacy CPU
-	# arrival inspection. Rendering and listeners sample the continuous field.
-	var distances: Dictionary = {}
-	for cell: Vector2i in _data.walkable:
-		var distance: float = event_distance(event, _data.cell_to_world(cell))
-		if distance <= radius:
-			distances[cell] = distance
-	event["distances"] = distances
+	_update_debug_distances(event)
 	_next_id += 1
 	emitted_count += 1
 	active_waves.append(event)
@@ -166,7 +207,8 @@ func emit_sound(kind: String, source: String, position: Vector3) -> Dictionary:
 	_wave_origins[slot] = Vector4(position.x, position.y, position.z, clock)
 	# Negative speed is a compact source-color flag, not a different rule.
 	var speed: float = maxf(0.1, float(_config.get("propagation_speed", 24.0)))
-	_wave_parameters[slot] = Vector4(radius, -speed if source == "monster" else speed, float(event["reveal_duration"]), 1.0)
+	_wave_parameters[slot] = Vector4(radius, -speed if source == "monster" else speed, float(event["reveal_duration"]), visual_radius)
+	_update_region_uniforms(event)
 	_sync_materials()
 	play_cue(kind, position)
 	sound_emitted.emit(event)
@@ -174,11 +216,30 @@ func emit_sound(kind: String, source: String, position: Vector3) -> Dictionary:
 
 
 func horizontal_distance(event: Dictionary, at: Vector3) -> float:
+	var target_region: int = _region_at(at)
+	if target_region >= 0:
+		if int(event["source_region"]) == target_region:
+			var source: Vector3 = event["position"]
+			return Vector2(source.x, source.z).distance_to(Vector2(at.x, at.z))
+		var prefix: float = (event["portal_distances"] as Vector4)[target_region]
+		if prefix < 0.0:
+			return INF
+		var portal: Vector3 = _regions[target_region]["portal"]
+		return prefix + Vector2(portal.x, portal.z).distance_to(Vector2(at.x, at.z))
+	if not bool(event["exterior_enabled"]):
+		return INF
+	return _exterior_distance(event, at)
+
+
+func _exterior_distance(event: Dictionary, at: Vector3) -> float:
 	# The exact same wall-aware, normalized bilinear filter is used in the
 	# fragment shader. Blocked texels never interpolate through a solid cell.
 	if not _data.is_open(_data.world_to_cell(at)):
 		return INF
 	var image: Image = event["distance_image"]
+	var nearest := Vector2i(floori(at.x * _field_resolution), floori(at.z * _field_resolution))
+	if image.get_pixelv(nearest).r < 0.0:
+		return INF
 	var sample_at := Vector2(at.x, at.z) * float(_field_resolution) - Vector2(0.5, 0.5)
 	var base := Vector2i(floori(sample_at.x), floori(sample_at.y))
 	var fraction := sample_at - Vector2(base)
@@ -195,7 +256,7 @@ func horizontal_distance(event: Dictionary, at: Vector3) -> float:
 			var weight: float = (fraction.x if x else 1.0 - fraction.x) * (fraction.y if y else 1.0 - fraction.y)
 			total += distance * weight
 			weight_sum += weight
-	return total / weight_sum if weight_sum > 0.00001 else INF
+	return total / weight_sum + float(event.get("source_prefix", 0.0)) if weight_sum > 0.00001 else INF
 
 
 func event_distance(event: Dictionary, at: Vector3) -> float:
@@ -234,6 +295,7 @@ func _physics_process(delta: float) -> void:
 		var event: Dictionary = active_waves[index]
 		var radius: float = (clock - float(event["time"])) * speed
 		var previous_radius: float = float(event["previous_radius"])
+		_advance_portals(event, radius)
 		var distances: Dictionary = event["distances"]
 		var revealed: Dictionary = event["revealed"]
 		for key: Variant in distances:
@@ -255,7 +317,7 @@ func _physics_process(delta: float) -> void:
 		event["previous_radius"] = radius
 		# Retain each bounded distance layer through its world-space residue.
 		# No mesh-face state and no camera-dependent reveal history is involved.
-		if clock - float(event["time"]) > float(event["max_distance"]) / speed + float(event["reveal_duration"]):
+		if clock - float(event["time"]) > float(event["visual_max_distance"]) / speed + float(event["reveal_duration"]):
 			_wave_parameters[int(event["slot"])] = Vector4.ZERO
 			active_waves.remove_at(index)
 			_sync_materials()
@@ -274,7 +336,8 @@ func _deliver_listeners(event: Dictionary, previous_radius: float, radius: float
 		if not is_instance_valid(listener):
 			_listeners.erase(id)
 			continue
-		var distance: float = event_distance(event, listener.global_position)
+		var at: Vector3 = listener.call("acoustic_position") if listener.has_method("acoustic_position") else listener.global_position
+		var distance: float = event_distance(event, at)
 		if distance > float(event["max_distance"]):
 			continue
 		# Test the swept front against the current collision footprint. Entering
@@ -287,7 +350,7 @@ func _deliver_listeners(event: Dictionary, previous_radius: float, radius: float
 		delivered["arrival_time"] = float(event["time"]) + distance / speed
 		delivered["received_intensity"] = float(event["intensity"]) * maxf(0.0, 1.0 - distance / maxf(0.01, float(event["max_distance"])))
 		arrival_count += 1
-		last_debug = "声波 #%d %s → %s：连续声路 %.2f m / %.0f m/s；传播 %.2f s" % [int(event["id"]), String(event["kind"]), id, distance, speed, clock - float(event["time"])]
+		last_debug = "声波 #%d %s → %s：声路 %.2f m / %.0f m/s；证据 %.1f m / 弱光 %.1f m" % [int(event["id"]), String(event["kind"]), id, distance, speed, float(event["max_distance"]), float(event["visual_max_distance"])]
 		sound_arrived.emit(delivered, id)
 
 
@@ -297,6 +360,8 @@ func clear() -> void:
 	_cache_order.clear()
 	for slot: int in range(_wave_parameters.size()):
 		_wave_parameters[slot] = Vector4.ZERO
+		_wave_regions[slot] = Vector4.ZERO
+		_wave_portals[slot] = Vector4(-1.0, -1.0, -1.0, -1.0)
 	_sync_materials()
 	clock = 0.0
 	_next_id = 1
@@ -325,3 +390,74 @@ func reveal_arrival_time(cell: Vector2i, danger: bool = false) -> float:
 		return -100.0
 	var value: Color = _image.get_pixel(cell.x, cell.y)
 	return value.g if danger else value.r
+
+
+func _region_at(at: Vector3) -> int:
+	for index: int in range(_regions.size()):
+		var bounds: AABB = _regions[index]["bounds"]
+		# Include the floor boundary, but leave the exterior top face outside.
+		if at.x >= bounds.position.x and at.x < bounds.end.x and at.z >= bounds.position.z and at.z < bounds.end.z and at.y >= bounds.position.y - 0.01 and at.y < bounds.end.y:
+			return index
+	return -1
+
+
+func _door_closed(index: int) -> bool:
+	return not is_instance_valid(_hiding) or bool(_hiding.call("is_closed", String(_regions[index]["id"])))
+
+
+func _advance_portals(event: Dictionary, radius: float) -> void:
+	# Each wave tests each cupboard opening exactly once when its front arrives.
+	# Opening a door afterwards cannot resurrect a missed front or replay audio.
+	var changed: bool = false
+	var checked: Dictionary = event["portal_checked"]
+	var source: int = int(event["source_region"])
+	if source >= 0 and not checked.has(source) and radius >= float(event["source_prefix"]):
+		checked[source] = true
+		event["exterior_enabled"] = not _door_closed(source)
+		changed = true
+	if bool(event["exterior_enabled"]):
+		var distances: Vector4 = event["portal_distances"]
+		for index: int in range(_regions.size()):
+			if index == source or checked.has(index):
+				continue
+			var distance: float = (event["portal_path_distances"] as PackedFloat32Array)[index]
+			if distance <= float(event["visual_max_distance"]) and radius >= distance:
+				checked[index] = true
+				if not _door_closed(index):
+					distances[index] = distance
+				changed = true
+		event["portal_distances"] = distances
+	if changed:
+		_update_region_uniforms(event)
+		_update_debug_distances(event)
+		_sync_materials()
+
+
+func _update_region_uniforms(event: Dictionary) -> void:
+	var slot: int = int(event["slot"])
+	_wave_regions[slot] = Vector4(float(int(event["source_region"]) + 1), 1.0 if bool(event["exterior_enabled"]) else 0.0, float(event["source_prefix"]), 0.0)
+	_wave_portals[slot] = event["portal_distances"]
+
+
+func _update_debug_distances(event: Dictionary) -> void:
+	# Coarse F1 diagnostics only; the actual world reveal is continuous per pixel.
+	var distances: Dictionary = {}
+	for cell: Vector2i in _data.walkable:
+		var distance: float = event_distance(event, _data.cell_to_world(cell))
+		if distance <= float(event["visual_max_distance"]):
+			distances[cell] = distance
+	event["distances"] = distances
+
+
+func visual_attenuation(event: Dictionary, distance: float) -> float:
+	# Same continuous envelope as the shader; useful to inspect the actual
+	# gameplay/visual split without treating the visual tail as evidence.
+	var core: float = float(event["max_distance"])
+	var outer: float = float(event["visual_max_distance"])
+	var transition: float = core * float(_config.get("wave_core_transition_start", 0.8))
+	var weak: float = float(_config.get("wave_outer_intensity", 0.18))
+	if distance <= transition:
+		return lerpf(1.0, 0.55, smoothstep(0.0, transition, distance))
+	if distance <= core:
+		return lerpf(0.55, weak, smoothstep(transition, core, distance))
+	return weak * (1.0 - smoothstep(core, maxf(core + 0.001, outer), distance))

@@ -49,6 +49,19 @@ def sound(kind: str, duration: float) -> None:
                 local = t - i * 0.12
                 if local >= 0:
                     value += math.sin(2 * math.pi * frequency * local) * math.exp(-local * 6) * 0.3
+        elif kind == "inspect":
+            # Two knocks then a rising scrape, distinct from the attack windup.
+            value = previous_noise * 0.20 * min(t / 0.3, 1.0)
+            for pulse in (0.0, 0.32):
+                local = t - pulse
+                if local >= 0:
+                    value += (math.sin(2 * math.pi * 165 * local) * 0.65
+                              + noise * 0.3) * math.exp(-local * 25)
+            value *= min(1.0, (duration - t) / 0.12)
+        elif kind == "cabinet":
+            value = (previous_noise * 0.5 + math.sin(2 * math.pi * 235 * t) * 0.3) * math.exp(-t * 15)
+            if t > 0.19:
+                value += noise * math.exp(-(t - 0.19) * 65) * 0.45
         elif kind == "victory":
             value = 0.0
             for i, frequency in enumerate((329.63, 440.0, 554.37, 659.25)):
@@ -73,6 +86,7 @@ if __name__ == "__main__":
     OUT.mkdir(parents=True, exist_ok=True)
     for name, length in {"walk": 0.22, "run": 0.26, "clap": 0.30,
                          "probe": 0.90, "windup": 0.65, "pickup": 0.80,
-                         "victory": 1.50, "defeat": 1.20}.items():
+                         "victory": 1.50, "defeat": 1.20,
+                         "inspect": 1.20, "cabinet": 0.32}.items():
         sound(name, length)
-    print(f"Generated 8 original WAV cues in {OUT}")
+    print(f"Generated 10 original WAV cues in {OUT}")

@@ -43,6 +43,7 @@ func _run() -> void:
 	data.walkable.clear()
 	data.solid_heights.clear()
 	data.room_names.clear()
+	data.hiding_spots.clear()
 	for z: int in range(2, 25):
 		for x: int in range(2, 25):
 			data.walkable[Vector2i(x, z)] = true
@@ -71,8 +72,9 @@ func _run() -> void:
 	_camera.position = Vector3(12.5, 20.0, 12.5)
 	_camera.rotation_degrees = Vector3(-90.0, 0.0, 0.0)
 	_camera.current = true
-	_sound.emit_sound("clap", "player", ORIGIN)
+	var baseline_capture: Image = await _capture()
 	var speed: float = float(config["propagation_speed"])
+	_sound.emit_sound("clap", "player", ORIGIN)
 	_sound._physics_process(5.0 / speed)
 	var circular_capture: Image = await _capture()
 	for index: int in range(8):
@@ -83,7 +85,38 @@ func _run() -> void:
 		print("WAVE_PIXEL angle=%d inside=%.4f outside=%.4f" % [index * 45, _brightness(inside), _brightness(outside)])
 		_check(_brightness(inside) > 0.17, "radius 4.2 m reached at %d degrees, including diagonals" % (index * 45))
 		_check(_brightness(outside) < 0.10, "radius 6.0 m remains dark at %d degrees" % (index * 45))
-	_save_capture(circular_capture, "v0.2-circular-front.png")
+	_save_capture(circular_capture, "v0.3-circular-front.png")
+	# The original range is a gameplay boundary, not a visual cutoff. A walk
+	# pulse fits both the strong core and 1.5x tail inside this open fixture.
+	_sound.clear()
+	_sound.emit_sound("walk", "player", ORIGIN)
+	_sound._physics_process(4.5 / speed)
+	var advancing_tail: Image = await _capture()
+	var just_reached: float = _brightness(_sample(advancing_tail, ORIGIN + Vector3(4.1, 0.0, 0.0)))
+	var not_reached: float = _brightness(_sample(advancing_tail, ORIGIN + Vector3(5.0, 0.0, 0.0)))
+	var before_base: Color = _sample(baseline_capture, ORIGIN + Vector3(5.0, 0.0, 0.0))
+	var before_actual: Color = _sample(advancing_tail, ORIGIN + Vector3(5.0, 0.0, 0.0))
+	print("TAIL_ADVANCE reached=%.4f unreached=%.4f baseline=%.4f" % [just_reached, not_reached, _brightness(before_base)])
+	_check(just_reached > 0.06 and _color_delta(before_actual, before_base) < 1.0 / 255.0, "weak outer light travels outward in time; it does not light the entire tail immediately")
+	_sound._physics_process(3.0 / speed)
+	var tail_capture: Image = await _capture()
+	var inner: float = _brightness(_sample(tail_capture, ORIGIN + Vector3(3.5, 0.0, 0.0)))
+	var tail: float = _brightness(_sample(tail_capture, ORIGIN + Vector3(4.8, 0.0, 0.0)))
+	var tail_edge: float = _brightness(_sample(tail_capture, ORIGIN + Vector3(5.8, 0.0, 0.0)))
+	var beyond: float = _brightness(_sample(tail_capture, ORIGIN + Vector3(6.3, 0.0, 0.0)))
+	var boundary_in: float = _brightness(_sample(tail_capture, ORIGIN + Vector3(3.97, 0.0, 0.0)))
+	var boundary_out: float = _brightness(_sample(tail_capture, ORIGIN + Vector3(4.03, 0.0, 0.0)))
+	print("TAIL_PIXEL inner=%.4f weak=%.4f edge=%.4f beyond=%.4f boundary_delta=%.4f" % [inner, tail, tail_edge, beyond, absf(boundary_in - boundary_out)])
+	_check(inner > tail and tail > tail_edge and tail_edge >= beyond, "outer light becomes progressively weaker outside the 4 m core")
+	var beyond_base: Color = _sample(baseline_capture, ORIGIN + Vector3(6.3, 0.0, 0.0))
+	var beyond_actual: Color = _sample(tail_capture, ORIGIN + Vector3(6.3, 0.0, 0.0))
+	print("TAIL_BEYOND actual=%.4f baseline=%.4f" % [beyond, _brightness(beyond_base)])
+	_check(tail > 0.10 and _color_delta(beyond_actual, beyond_base) < 1.0 / 255.0, "a visible weak tail continues beyond the original range and reaches zero at finite distance")
+	_check(absf(boundary_in - boundary_out) < 0.04, "GPU pixels remain continuous across the strong/weak boundary")
+	_save_capture(tail_capture, "v0.3-diffuse-tail.png")
+	_sound.clear()
+	_sound.emit_sound("clap", "player", ORIGIN)
+	_sound._physics_process(5.0 / speed)
 	# A single vertical quad crosses the hemisphere: low portions have been
 	# reached at radius 5 m while higher portions have a longer spatial path.
 	floor_mesh.visible = false
@@ -103,7 +136,7 @@ func _run() -> void:
 	print("HEMISPHERE_PIXEL radius=5 low=%.4f high=%.4f" % [low, high_before])
 	_check(low > 0.17, "hemisphere has reached the lower part of one continuous wall face")
 	_check(high_before < 0.10, "upper part of that same face remains dark until the hemisphere arrives")
-	_save_capture(hemisphere_capture, "v0.2-hemisphere-wall.png")
+	_save_capture(hemisphere_capture, "v0.3-hemisphere-wall.png")
 	_sound._physics_process(1.2 / speed)
 	var later_capture: Image = await _capture()
 	var high_after: float = _brightness(_sample(later_capture, high_point))
@@ -111,10 +144,13 @@ func _run() -> void:
 	_check(high_after > 0.17 and high_after > high_before + 0.10,
 		"the high point lights later as radius expands; wall height is not lit all at once")
 	_sound.clear()
+	_sound._materials.clear()
+	_material = null
 	world.queue_free()
 	await process_frame
+	await process_frame
 	print("WAVE_VISUAL_RESULT: %s failures=%d" % ["PASS" if _failures == 0 else "FAIL", _failures])
-	quit(0 if _failures == 0 else 1)
+	quit.call_deferred(0 if _failures == 0 else 1)
 
 
 func _plane(corners: Array[Vector3], normal: Vector3) -> MeshInstance3D:
@@ -157,3 +193,7 @@ func _save_capture(capture: Image, filename: String) -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(CAPTURE_DIRECTORY))
 	var result: Error = capture.save_png(CAPTURE_DIRECTORY.path_join(filename))
 	_check(result == OK, "saved graphical evidence " + filename)
+
+
+func _color_delta(actual: Color, baseline: Color) -> float:
+	return maxf(absf(actual.r - baseline.r), maxf(absf(actual.g - baseline.g), absf(actual.b - baseline.b)))

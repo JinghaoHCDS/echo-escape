@@ -133,6 +133,32 @@ func _run() -> void:
 
 	sound.clear()
 	_deliveries.clear()
+	# A small walk pulse has the same envelope as a clap, while fitting inside
+	# an unobstructed part of the production hall for a delayed tail assertion.
+	var tail_origin := Vector3(16.125, 0.0, 22.125)
+	listener.global_position = Vector3(21.125, 0.0, 22.125)
+	var tail_event: Dictionary = sound.emit_sound("walk", "player", tail_origin)
+	_check(float(tail_event["max_distance"]) == 4.0 and float(tail_event["visual_max_distance"]) == 6.0, "弱光尾扩展到 1.5 倍，听觉半径保持 4 米")
+	var tail_distance: float = sound.event_distance(tail_event, listener.global_position)
+	_check(tail_distance > 4.0 and tail_distance < 6.0, "原半球边缘之外仍有连续可达距离场")
+	var edge_inside: float = sound.visual_attenuation(tail_event, 3.999)
+	var edge_outside: float = sound.visual_attenuation(tail_event, 4.001)
+	_check(absf(edge_inside - edge_outside) < 0.001, "强弱范围边界的强度连续，不产生亮度断层")
+	_check(sound.visual_attenuation(tail_event, 5.0) > 0.0 and is_zero_approx(sound.visual_attenuation(tail_event, 6.0)), "外圈保持微亮并在有限外径平滑降至零")
+	sound._physics_process((tail_distance - 0.02) / speed)
+	_check(sound.reveal_arrival_time(Vector2i(21, 22)) < -90.0, "弱光尾也必须等待声路传播，不能提前显形")
+	sound._physics_process(0.05)
+	_check(_deliveries.is_empty(), "外圈显形不扩大怪物听觉、探测或道具监听范围")
+	_check(sound.reveal_arrival_time(Vector2i(21, 22)) > 0.0, "超过原作用半径的环境能获得弱光到达记录")
+	sound.clear()
+	var lifetime_event: Dictionary = sound.emit_sound("walk", "player", tail_origin)
+	sound._physics_process(float(lifetime_event["max_distance"]) / speed + float(lifetime_event["reveal_duration"]) + 0.01)
+	_check(sound.active_waves.size() == 1, "声波寿命覆盖外圈残留，不在原半径寿命时截断弱光")
+	sound._physics_process(1.0)
+	_check(sound.active_waves.is_empty(), "弱光残留结束后正确回收声波层")
+
+	sound.clear()
+	_deliveries.clear()
 	var stable_node_count: int = sound.get_child_count()
 	for index: int in range(500):
 		var moving_origin: Vector3 = origin + Vector3(float(index % 40) * 0.005, 0.0, 0.0)

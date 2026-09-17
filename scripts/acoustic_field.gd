@@ -9,6 +9,7 @@ const CROSSING_EPSILON: float = 0.0000001
 
 var corners: PackedVector2Array = PackedVector2Array()
 var _open: PackedByteArray = PackedByteArray()
+var _regions: Array[Rect2] = []
 var _edges: Array[PackedInt32Array] = []
 var _edge_lengths: Array[PackedFloat32Array] = []
 var _sample_caches: Dictionary = {}
@@ -20,6 +21,11 @@ func setup(data: LevelData) -> void:
 	for cell: Vector2i in data.walkable:
 		if _in_bounds(cell.x, cell.y):
 			_open[cell.y * LevelData.WIDTH + cell.x] = 1
+	_regions.clear()
+	for spot: Dictionary in data.hiding_spots:
+		if String(spot["kind"]) == "locker":
+			var bounds: AABB = spot["bounds"]
+			_regions.append(Rect2(Vector2(bounds.position.x, bounds.position.z), Vector2(bounds.size.x, bounds.size.z)))
 	corners.clear()
 	_edges.clear()
 	_edge_lengths.clear()
@@ -40,6 +46,12 @@ func setup(data: LevelData) -> void:
 			if open_count == 3:
 				var offset := Vector2(1.0 if solid.x < x else -1.0, 1.0 if solid.y < y else -1.0)
 				corners.append(Vector2(x, y) + offset * CORNER_MARGIN)
+	# Locker interiors are independent acoustic regions. Exterior paths skirt
+	# their rectangular shell even when their single portal is open.
+	for region: Rect2 in _regions:
+		for corner: Vector2 in [region.position - Vector2.ONE * CORNER_MARGIN, region.position + Vector2(region.size.x + CORNER_MARGIN, -CORNER_MARGIN), region.end + Vector2.ONE * CORNER_MARGIN, region.position + Vector2(-CORNER_MARGIN, region.size.y + CORNER_MARGIN)]:
+			if _is_open(floori(corner.x), floori(corner.y)) and not _inside_region(corner):
+				corners.append(corner)
 	for index: int in range(corners.size()):
 		_edges.append(PackedInt32Array())
 		_edge_lengths.append(PackedFloat32Array())
@@ -88,7 +100,7 @@ func distance_at(wave: Dictionary, point: Vector3) -> float:
 	var target := Vector2(point.x, point.z)
 	var source: Vector2 = wave["source_2d"]
 	var max_distance: float = float(wave["max_distance"])
-	if not _is_open(floori(target.x), floori(target.y)):
+	if not _is_open(floori(target.x), floori(target.y)) or _inside_region(target):
 		return INF
 	var straight: float = source.distance_to(target)
 	if straight > max_distance:
@@ -107,6 +119,9 @@ func distance_at(wave: Dictionary, point: Vector3) -> float:
 
 
 func segment_clear(a: Vector2, b: Vector2) -> bool:
+	for region: Rect2 in _regions:
+		if _segment_intersects_rect(a, b, region):
+			return false
 	# Exact cell traversal, not coarse samples that can skip a wall corner.
 	var x: int = floori(a.x)
 	var y: int = floori(a.y)
@@ -160,6 +175,8 @@ func prepare_samples(resolution: int = 4) -> void:
 			if not _is_open(x / resolution, y / resolution):
 				continue
 			var point := Vector2((float(x) + 0.5) / float(resolution), (float(y) + 0.5) / float(resolution))
+			if _inside_region(point):
+				continue
 			sample_positions.append(point)
 			sample_pixels.append(y * width + x)
 			var ids := PackedInt32Array()
@@ -215,3 +232,30 @@ func _in_bounds(x: int, y: int) -> bool:
 
 func _is_open(x: int, y: int) -> bool:
 	return _in_bounds(x, y) and _open[y * LevelData.WIDTH + x] != 0
+
+
+func _inside_region(point: Vector2) -> bool:
+	for region: Rect2 in _regions:
+		if region.has_point(point):
+			return true
+	return false
+
+
+func _segment_intersects_rect(a: Vector2, b: Vector2, rect: Rect2) -> bool:
+	# Slab intersection prevents sound taking a shortcut through the cupboard
+	# back/sides. Its portal is handled once per wave by SoundSystem.
+	var delta: Vector2 = b - a
+	var near: float = 0.0
+	var far: float = 1.0
+	for axis: int in range(2):
+		if absf(delta[axis]) < CROSSING_EPSILON:
+			if a[axis] < rect.position[axis] or a[axis] > rect.end[axis]:
+				return false
+		else:
+			var entry: float = (rect.position[axis] - a[axis]) / delta[axis]
+			var exit_value: float = (rect.end[axis] - a[axis]) / delta[axis]
+			near = maxf(near, minf(entry, exit_value))
+			far = minf(far, maxf(entry, exit_value))
+			if near > far:
+				return false
+	return true
